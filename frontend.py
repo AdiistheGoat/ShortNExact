@@ -7,7 +7,7 @@ class frontend:
 
     # intializing the frontend class
     def __init__(self):
-        self.endpoint = "" 
+        self.client = None
 
     # function to validate input text and number of words
     def validate_input(self,input_text,noOfWords,option):
@@ -23,7 +23,7 @@ class frontend:
     def process_endpoint(self,endpoint):
         try:
             client = openai.OpenAI(api_key=endpoint)
-            self.endpoint = endpoint
+            self.client = client
 
         except Exception as e:
             raise gr.Error(f"{e}")
@@ -33,14 +33,13 @@ class frontend:
     def process(self,inputText, noOfWords, option):
 
         # validate the input
-        validation = frontend.validate_input(inputText, noOfWords,option)
+        validation = self.validate_input(inputText, noOfWords,option)
         if(validation):
             raise gr.Error(validation)
         
         # Create an instance of the ML class and process the text
-
         refined_input_text = " ".join(inputText.strip())
-        ml_instance = ML(refined_input_text, noOfWords, option,self.endpoint)
+        ml_instance = ML(refined_input_text, noOfWords, option,self.client)
         processed_text = ml_instance.process_text()
         return processed_text
     
@@ -86,7 +85,6 @@ class frontend:
 
         demo.launch()
 
-    
 if __name__ == "__main__":
     frontend_instance = frontend()
     frontend_instance.demo()
