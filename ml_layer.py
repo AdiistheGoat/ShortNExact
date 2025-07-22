@@ -1,9 +1,10 @@
 class ML: 
 
-    def __init__(self, input_text, number_of_words, option):
+    def __init__(self, input_text, number_of_words, option,endpoint):
         self.input_text = input_text
         self.number_of_words = number_of_words
         self.option = option    
+        self.endpoint = endpoint
 
 
     def process_text(self):
