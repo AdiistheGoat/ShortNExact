@@ -1,6 +1,62 @@
 import gradio as gr
 from ml_layer import ML
 import openai
+from gradio.themes.base import Base
+from gradio.themes.utils import colors, fonts
+
+
+
+class ElegantVibeTheme(Base):
+    
+    def __init__(self):
+        super().__init__(
+            primary_hue=colors.violet,
+            secondary_hue=colors.fuchsia,
+            neutral_hue=colors.gray,
+            font=fonts.GoogleFont("Inter")
+        )
+
+    def apply_custom_styles(self):
+        return {
+            "button.primary": {
+                "background-color": "#6d28d9",   # violet-700
+                "color": "#ffffff",
+                "font-weight": "bold",
+                "border-radius": "10px",
+                "padding": "12px 18px",
+                "font-size": "16px",
+                "box-shadow": "0 4px 6px rgba(109, 40, 217, 0.3)"
+            },
+            "button.secondary": {
+                "background-color": "#a21caf",   # fuchsia-700
+                "color": "#ffffff",
+                "font-weight": "bold",
+                "border-radius": "8px",
+                "padding": "10px 16px",
+                "font-size": "15px",
+                "box-shadow": "0 4px 6px rgba(162, 28, 175, 0.3)"
+            },
+            "input.textbox": {
+                "border": "2px solid #7c3aed",   # violet-600
+                "padding": "10px",
+                "font-size": "15px",
+                "border-radius": "6px",
+                "background-color": "#1f1b2e",   # dark background
+                "color": "#f8fafc"
+            },
+            "input.radio": {
+                "accent-color": "#a21caf"  # fuchsia-700
+            },
+            "label": {
+                "color": "#facc15",  # yellow-400
+                "font-weight": "700",
+                "font-size": "16px"
+            },
+            "body": {
+                "background-color": "#0f172a",  # slate-900
+                "color": "#f1f5f9"
+            }
+        }
 
 
 class frontend:
@@ -38,7 +94,7 @@ class frontend:
             raise gr.Error(validation)
         
         # Create an instance of the ML class and process the text
-        refined_input_text = " ".join(inputText.strip())
+        refined_input_text = " ".join(inputText.split())
         ml_instance = ML(refined_input_text, noOfWords, option,self.client)
         processed_text = ml_instance.process_text()
         return processed_text
@@ -47,7 +103,9 @@ class frontend:
     # function to create the Gradio interface and launch the app
     def demo(self):
 
-        demo = gr.Blocks()
+        theme = ElegantVibeTheme()
+
+        demo = gr.Blocks(theme=theme)
 
         with demo:
             gr.Markdown(

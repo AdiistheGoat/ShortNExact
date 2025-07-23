@@ -28,14 +28,13 @@ class ML:
     reduces the word count. Stop once the total number of reduced words reaches the target.
     """
     def process_short(self):
+
         # Logic to shorten text to fit within a specified word count
         target_word_count = self.number_of_words
-        original_words = len(self.input_text.split())
-        to_reduce = original_words - target_word_count
-        if to_reduce <= 0:
-            return self.input_text
+        original_no_of_words = len(self.input_text.split())
+        to_reduce = original_no_of_words - target_word_count
 
-        lines = self.input_text.strip().split("\n")
+        lines = self.input_text.split(".")
         optimized_lines = lines.copy()
 
         # System prompt
@@ -46,6 +45,7 @@ class ML:
             "- Do NOT change the meaning.\n"
             "- Make small improvements: remove redundancy, merge phrases, trim unnecessary words.\n"
             "- Keep the tone consistent with surrounding lines.\n"
+            "Dont keep a full stop at the end of the line.\n"
             "Only return the improved version of the CURRENT line — nothing else."
         )
 
@@ -81,4 +81,4 @@ class ML:
                 to_reduce -= delta
                 optimized_lines[i] = shortened
 
-        return "\n".join(optimized_lines)
+        return ". ".join(optimized_lines)
