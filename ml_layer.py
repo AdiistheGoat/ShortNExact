@@ -34,6 +34,8 @@ class ML:
         original_no_of_words = len(self.input_text.split())
         to_reduce = original_no_of_words - target_word_count
 
+        print(f"Original word count: {original_no_of_words}, Target word count: {target_word_count}, Words to reduce: {to_reduce}")
+
         lines = self.input_text.split(".")
         optimized_lines = lines.copy()
 
@@ -49,36 +51,40 @@ class ML:
             "Only return the improved version of the CURRENT line — nothing else."
         )
 
-        for i, line in enumerate(lines):
-            if to_reduce <= 0:
-                break  # Stop if target met
+        while(to_reduce > 0):
 
-            prev_line = lines[i - 1] if i > 0 else ""
-            next_line = lines[i + 1] if i < len(lines) - 1 else ""
+            for i, line in enumerate(optimized_lines):
+                if to_reduce <= 0:
+                    break  # Stop if target met
 
-            user_input = (
-                f"Previous line:\n{prev_line}\n\n"
-                f"Current line:\n{line}\n\n"
-                f"Next line:\n{next_line}\n\n"
-                f"Return an improved and shorter version of the CURRENT line only."
-            )
+                prev_line = optimized_lines[i - 1] if i > 0 else ""
+                next_line = optimized_lines[i + 1] if i < len(optimized_lines) - 1 else ""
 
-            response = self.client.responses.create(
-                model="gpt-4.1",
-                input = f"{user_input}",
-                top_p = 0.3,
-                instructions = system_prompt
-            )
+                user_input = (
+                    f"Previous line:\n{prev_line}\n\n"
+                    f"Current line:\n{line}\n\n"
+                    f"Next line:\n{next_line}\n\n"
+                    f"Return an improved and shorter version of the CURRENT line only."
+                )
 
-            shortened = response.output[0].content[0].text.strip()
+                response = self.client.responses.create(
+                    model="gpt-4.1",
+                    input = f"{user_input}",
+                    top_p = 0.3,
+                    instructions = system_prompt
+                )
 
-            # Update word budget
-            old_len = len(line.split())
-            new_len = len(shortened.split())
-            delta = old_len - new_len
+                shortened = response.output[0].content[0].text.strip()
 
-            if delta > 0:
-                to_reduce -= delta
-                optimized_lines[i] = shortened
+                # Update word budget
+                old_len = len(line.split())
+                new_len = len(shortened.split())
+                delta = old_len - new_len
 
-        return ". ".join(optimized_lines)
+                if delta > 0:
+                    to_reduce -= delta
+                    optimized_lines[i] = shortened
+
+        final_text = ". ".join(optimized_lines).strip()
+        print(f"length of Final text after shortening: {len(final_text)}")
+        return final_text
