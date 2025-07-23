@@ -68,7 +68,7 @@ class ML:
 
   
         count = 0
-        while(to_reduce_percentage > 0.1) and count<5:
+        while(to_reduce_percentage > 0.05) and count<5:
 
             # Step 2: Concisely rewrite each chunk
             system_prompt_concise = f"""
@@ -150,6 +150,8 @@ class ML:
         curr_text = input_text.strip()
         curr_no_of_words = len(curr_text.split())
         optimized_lines = curr_text.split(".")
+        for i in range(len(optimized_lines)):
+            optimized_lines[i] = optimized_lines[i].strip()
         to_reduce = curr_no_of_words - target_word_count
 
         print(f"Original word count: {curr_no_of_words}, Target word count: {target_word_count}, Words to reduce: {to_reduce}")
@@ -179,6 +181,7 @@ class ML:
                 )
 
                 shortened = response.output[0].content[0].text.strip()
+                # print(shortened)
 
                 # Update word budget
                 old_len = len(line.split())
@@ -191,6 +194,8 @@ class ML:
             # hardocded condition to ensure decent progress. We need to intergate this so that the
             # LLM does not get stuck in a generation loop when it is unable to reduce the text further
             # ToDo: fix this clean variables workflow
+            # ToDo: fix the spaces issu....I am attaching ". " it every time
+            # print(optimized_lines) 
 
             curr_text = ". ".join(optimized_lines).strip()
 
@@ -200,9 +205,7 @@ class ML:
                 count = max(0,count-2)
 
             curr_no_of_words = len(curr_text.split())
-            optimized_lines = curr_text.split(".")
             to_reduce = curr_no_of_words - target_word_count
-
             print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}")
 
 
