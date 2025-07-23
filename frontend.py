@@ -44,7 +44,7 @@ class frontend:
         refined_input_text = " ".join(inputText.split())
         ml_instance = ML(refined_input_text, noOfWords, option,self.client)
         processed_text = ml_instance.process_text()
-        return processed_text
+        return processed_text,len(processed_text.split())
     
 
     # function to create the Gradio interface and launch the app
@@ -77,12 +77,13 @@ class frontend:
             clear_button = gr.ClearButton(components=[input, number_of_words, option])
             submit_button_text = gr.Button("Submit")
 
-            output = gr.Textbox(label="Output Text", placeholder="Your processed text will appear here...")
+            output_text = gr.Textbox(label="Output Text", placeholder="Your processed text will appear here...")
+            output_no_of_words = gr.Textbox(label="Output Word Count", placeholder="Word count of the processed text will appear here...")
 
             submit_button_text.click(
                 fn=self.process,
                 inputs=[input, number_of_words, option],
-                outputs=[output]
+                outputs=[output_text,output_no_of_words]
             )
 
 

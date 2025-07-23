@@ -86,5 +86,5 @@ class ML:
                     optimized_lines[i] = shortened
 
         final_text = ". ".join(optimized_lines).strip()
-        print(f"length of Final text after shortening: {len(final_text)}")
+        print(f"length of Final text after shortening: {len(final_text.split())}")
         return final_text
