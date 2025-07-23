@@ -143,7 +143,8 @@ class ML:
             "- Make small improvements: remove redundancy, merge phrases, trim unnecessary words.\n"
             "- Keep the tone consistent with surrounding lines.\n"
             "Dont keep a full stop at the end of the line.\n"
-            "Only return the improved version of the CURRENT line — nothing else."
+            "Only return the improved version of the **CURRENT line** — nothing else."
+            "**ensure to make progress towards reducing the word count by at least some words**"
         )
 
         curr_text = input_text.strip()
@@ -168,7 +169,6 @@ class ML:
                     f"Previous line:\n{prev_line}\n\n"
                     f"Current line:\n{line}\n\n"
                     f"Next line:\n{next_line}\n\n"
-                    f"Return an improved and shorter version of the CURRENT line only."
                 )
 
                 response = self.client.responses.create(
@@ -193,20 +193,17 @@ class ML:
             # ToDo: fix this clean variables workflow
 
             curr_text = ". ".join(optimized_lines).strip()
-            
-            if(curr_no_of_words- len(temp_text.split()) < 1):
+
+            if(curr_no_of_words - len(curr_text.split()) < 1):
                 count += 1
             else:
                 count = max(0,count-2)
-            curr_no_of_words = len(temp_text.split())
 
             curr_no_of_words = len(curr_text.split())
             optimized_lines = curr_text.split(".")
             to_reduce = curr_no_of_words - target_word_count
 
-
-
-            print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}, Count: {count}\n")
+            print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}")
 
 
         final_text = ". ".join(optimized_lines).strip()
