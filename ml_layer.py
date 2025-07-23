@@ -53,9 +53,6 @@ class ML:
 
         print(f"Segmented into {len(curr_blobs)} chunks.")
 
-
-
-
         final_output = input_text
         target_word_count = self.number_of_words
         print('Target word count:', target_word_count)
@@ -104,6 +101,7 @@ class ML:
                 curr_blobs[index] = refined
 
             # Step 3: Combine all refined chunks
+            # ToDo: fix this clean variables workflow
             final_output = "\n\n".join(curr_blobs).strip()
             curr_no_of_words = len(final_output.split())
             delta =  to_reduce+target_word_count - curr_no_of_words 
@@ -112,7 +110,7 @@ class ML:
             if(delta<=10):
                 count+=1
             else:
-                count = 0
+                count = max(0,count-2)
 
             to_reduce = curr_no_of_words - target_word_count
             to_reduce_percentage = (to_reduce)/ curr_no_of_words
@@ -135,13 +133,6 @@ class ML:
 
         # Logic to shorten text to fit within a specified word count
         target_word_count = self.number_of_words
-        original_no_of_words = len(input_text.split())
-        to_reduce = original_no_of_words - target_word_count
-
-        print(f"Original word count: {original_no_of_words}, Target word count: {target_word_count}, Words to reduce: {to_reduce}")
-
-        lines = input_text.split(".")
-        optimized_lines = lines.copy()
 
         # System prompt
         system_prompt = (
@@ -155,9 +146,16 @@ class ML:
             "Only return the improved version of the CURRENT line — nothing else."
         )
 
+        curr_text = input_text.strip()
+        curr_no_of_words = len(curr_text.split())
+        optimized_lines = curr_text.split(".")
+        to_reduce = curr_no_of_words - target_word_count
+
+        print(f"Original word count: {curr_no_of_words}, Target word count: {target_word_count}, Words to reduce: {to_reduce}")
+
+        # to reduce has to be updated to reflect the number of words to reduce
         count = 0
-        curr_no_of_words = len(input_text.split())
-        while(to_reduce > 0) and count<10:
+        while(to_reduce > 0) and count<5:
 
             for i, line in enumerate(optimized_lines):
                 if to_reduce <= 0:
@@ -188,19 +186,28 @@ class ML:
                 delta = old_len - new_len
 
                 if delta > 0:
-                    to_reduce -= delta
                     optimized_lines[i] = shortened
 
             # hardocded condition to ensure decent progress. We need to intergate this so that the
             # LLM does not get stuck in a generation loop when it is unable to reduce the text further
-            temp_text = ". ".join(optimized_lines).strip()
+            # ToDo: fix this clean variables workflow
+
+            curr_text = ". ".join(optimized_lines).strip()
+            
             if(curr_no_of_words- len(temp_text.split()) < 1):
                 count += 1
             else:
-                count = 0
+                count = max(0,count-2)
+            curr_no_of_words = len(temp_text.split())
+
+            curr_no_of_words = len(curr_text.split())
+            optimized_lines = curr_text.split(".")
+            to_reduce = curr_no_of_words - target_word_count
 
 
-            
+
+            print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}, Count: {count}\n")
+
 
         final_text = ". ".join(optimized_lines).strip()
         print(f"length of Final text after shortening: {len(final_text.split())}")
