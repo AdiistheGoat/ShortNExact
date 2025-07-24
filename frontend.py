@@ -5,7 +5,6 @@ import gradio.themes
 from gradio.themes.base import Base
 from gradio.themes.utils import colors, fonts
 
-
 class frontend:
 
     # intializing the frontend class
@@ -105,11 +104,21 @@ if __name__ == "__main__":
 # 	•	The base image may lack things like build-essential or gcc
 
 
-# blackscoles
-# ito calculus
-
-
 # in most real-world setups, the frontend (React) and backend (Flask/FastAPI) are hosted separately, unless you’re building a monolithic app.
 
 # 	•	Frontend (React) → hosted on Vercel, Netlify, or S3 + CloudFront
 # 	•	Backend (Flask) → hosted on Render, Railway, Heroku, or EC2
+
+
+# If you use a prebuilt in-process library (like cachetools, ratelimit, or flask-limiter without Redis backend), here’s what happens:
+# 	•	It stores limits in memory, local to that Python process
+# 	•	If you have multiple API files, or multiple FastAPI/Flask instances (e.g., via Gunicorn workers, Docker containers),
+# → Each has its own memory, so:
+# 	•	API calls from the same IP won’t be counted together
+# 	•	Rate limits won’t sync
+# 	•	Caching will be inconsistent
+
+
+
+# blackscoles
+# ito calculus
