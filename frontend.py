@@ -92,3 +92,18 @@ class frontend:
 if __name__ == "__main__":
     frontend_instance = frontend()
     frontend_instance.demo()
+
+# semantic chunking
+# integrate functionality for pdf upload an text extracting from it - pdf uploader, integrate correct db , pdf text extractor
+# create an api endpoint for the applicaton
+# containerize the entire app, deploy on heroku or vercel(provides server infra layer) from docker image
+# hit the endpoint multiple times (load testing) and intergate logic to handle it using library or redis
+
+# 🚫 GitHub-based deploys run in preconfigured containers
+# 	•	These might not have required system packages
+# 	•	You might not even have permission to install them
+# 	•	The base image may lack things like build-essential or gcc
+
+
+# blackscoles
+# ito calculus
