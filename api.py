@@ -1,21 +1,21 @@
-import ML
+from ml_layer import ML
 from fastapi import FastAPI
 from pydantic import BaseModel
 import openai
 
 # Define request model
 class Item(BaseModel):
-    end_point: str
-    option: bool = int
-    input_text: float
-    no_of_words: str
+    api_key: str
+    option: int
+    input_text: str
+    no_of_words: int
 
 
 # function to process the endpoint
-def process_endpoint(endpoint: str):
+def process_endpoint(key: str):
     try:
-        client = openai.OpenAI(api_key=endpoint)
-        return client
+        client = openai.OpenAI(api_key=key)
+        client.models.list()
 
     except Exception as e:
         return ""
@@ -31,12 +31,17 @@ def validate_input(option:int, input_text:str, no_of_words:int):
         return "Input text needs to be longer than the number of words you want to shorten it to."
     return ""
 
+app = FastAPI()
 
 # Home route
 @app.get("/")
-def read_root(endpoint:str,option:int, input_text:str, no_of_words:int):
+def read_root(item: Item):
+    api_key = item.api_key
+    option = item.option
+    input_text = item.input_text
+    no_of_words = item.no_of_words
 
-    client = openai.OpenAI(api_key=endpoint)
+    client = process_endpoint(key=api_key)
     if not (client):
         return {"error": "endpoint not valid"}
 
@@ -45,7 +50,7 @@ def read_root(endpoint:str,option:int, input_text:str, no_of_words:int):
         return {"error": validation_msg}
     
 
-    if(option==0):
+    if(option==1):
         option_string = "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)"
 
     else:
