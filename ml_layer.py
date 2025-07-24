@@ -11,10 +11,12 @@ class ML:
     def process_text(self):
         # Placeholder for text processing logic
         if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
-            return self.process_concisely(self.input_text)
+            processed_text = self.process_concisely(self.input_text)
+            return processed_text, len(processed_text.split())
 
         elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
-            return self.process_short(self.input_text)
+            processed_text = self.process_short(self.input_text)
+            return processed_text, len(processed_text.split())
         
 
     """

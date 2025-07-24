@@ -43,8 +43,8 @@ class frontend:
         # Create an instance of the ML class and process the text
         refined_input_text = " ".join(inputText.split())
         ml_instance = ML(refined_input_text, noOfWords, option,self.client)
-        processed_text = ml_instance.process_text()
-        return processed_text,len(processed_text.split())
+        processed_text,processed_text_length = ml_instance.process_text()
+        return processed_text,processed_text_length
     
 
     # function to create the Gradio interface and launch the app
@@ -107,3 +107,9 @@ if __name__ == "__main__":
 
 # blackscoles
 # ito calculus
+
+
+# in most real-world setups, the frontend (React) and backend (Flask/FastAPI) are hosted separately, unless you’re building a monolithic app.
+
+# 	•	Frontend (React) → hosted on Vercel, Netlify, or S3 + CloudFront
+# 	•	Backend (Flask) → hosted on Render, Railway, Heroku, or EC2
