@@ -7,7 +7,7 @@ import time
 from fastapi import Request
 
 app = FastAPI()
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(host='localhost',port = 6379, db=0)
 
 RATE_LIMIT = 100       # Max 100 requests
 WINDOW_SIZE = 60       # Time window in seconds
@@ -59,7 +59,7 @@ def rate_limiter(request: Request):
     r.expire(key, WINDOW_SIZE)
 
     if len(valid_timestamps) > RATE_LIMIT:
-        raise HTTPException(status_code=429,detail="Rate limit exceeded")
+        return {"error": "Rate Limit Exceeded"}
 
 # Home route
 @app.get("/")
@@ -78,7 +78,6 @@ def read_root(item: Item,request: Request):
     if validation_msg:
         return {"error": validation_msg}
     
-
     if(option==1):
         option_string = "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)"
 

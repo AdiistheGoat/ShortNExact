@@ -70,7 +70,7 @@ class ML:
 
   
         count = 0
-        while(to_reduce_percentage > 0.05) and count<5:
+        while(to_reduce_percentage > 0.05) and count<10:
 
             # Step 2: Concisely rewrite each chunk
             system_prompt_concise = f"""
@@ -109,7 +109,7 @@ class ML:
             delta =  to_reduce+target_word_count - curr_no_of_words 
 
             # hardocoded condition to ensure decent progress
-            if(delta<=10):
+            if(delta<=0):
                 count+=1
             else:
                 count = max(0,count-2)
@@ -138,15 +138,19 @@ class ML:
 
         # System prompt
         system_prompt = (
-            "You are a precise text editor.\n"
-            "Your job is to shorten the CURRENT line **only** by a few words while preserving its original meaning and tone.\n"
-            "You are also provided the previous and next lines to help you understand the context and keep the flow natural.\n"
-            "- Do NOT change the meaning.\n"
-            "- Make small improvements: remove redundancy, merge phrases, trim unnecessary words.\n"
-            "- Keep the tone consistent with surrounding lines.\n"
+            "You are a text shortener"
+
+            "**Shorten the line plsss*"
+            "**ensure to make progress towards reducing the word count by some words**"
+            "- Try to maintain the core meaning while shortening as many words as possible should be the first priority"
+            "- Keep the tone and the voice(passive voice, active voice) same.\n"
+            "The max no of words you can reduce the sentence by is given to you as well"
+            "Dont comprompise on grammar rules"
+
             "Dont keep a full stop at the end of the line.\n"
             "Only return the improved version of the **CURRENT line** — nothing else."
-            "**ensure to make progress towards reducing the word count by at least some words**"
+            
+            
         )
 
         curr_text = input_text.strip()
@@ -154,25 +158,35 @@ class ML:
         optimized_lines = curr_text.split(".")
         for i in range(len(optimized_lines)):
             optimized_lines[i] = optimized_lines[i].strip()
+
+
+        for i in range(len(optimized_lines)):
+            line = optimized_lines[i]
+            if not(line):
+                optimized_lines.pop(i)
+
+
         to_reduce = curr_no_of_words - target_word_count
 
         print(f"Original word count: {curr_no_of_words}, Target word count: {target_word_count}, Words to reduce: {to_reduce}")
 
-        # to reduce has to be updated to reflect the number of words to reduce
+
+
+        """ hardocded condition to ensure decent progress. We need to intergate this so that the
+        LLM does not get stuck in a generation loop when it is unable to reduce the text further"""
         count = 0
-        while(to_reduce > 0) and count<5:
+        while(to_reduce > 0) and count<10:
 
             for i, line in enumerate(optimized_lines):
                 if to_reduce <= 0:
                     break  # Stop if target met
 
-                prev_line = optimized_lines[i - 1] if i > 0 else ""
-                next_line = optimized_lines[i + 1] if i < len(optimized_lines) - 1 else ""
+                # prev_line = optimized_lines[i - 1] if i > 0 else ""
+                # next_line = optimized_lines[i + 1] if i < len(optimized_lines) - 1 else ""
 
                 user_input = (
-                    f"Previous line:\n{prev_line}\n\n"
                     f"Current line:\n{line}\n\n"
-                    f"Next line:\n{next_line}\n\n"
+                    f"Max no words you can reduce: {to_reduce}"
                 )
 
                 response = self.client.responses.create(
@@ -189,28 +203,35 @@ class ML:
                 old_len = len(line.split())
                 new_len = len(shortened.split())
                 delta = old_len - new_len
+                # print("Line: " + line)
+                # print("Shortened: " + shortened)
+                # print(to_reduce)
+                # print(delta)
+                # print("\n\n")
 
                 if delta > 0:
                     optimized_lines[i] = shortened
+                    to_reduce -= delta
 
-            # hardocded condition to ensure decent progress. We need to intergate this so that the
-            # LLM does not get stuck in a generation loop when it is unable to reduce the text further
-            # ToDo: fix this clean variables workflow
-            # ToDo: fix the spaces issu....I am attaching ". " it every time
-            # print(optimized_lines) 
 
             curr_text = ". ".join(optimized_lines).strip()
 
             if(curr_no_of_words - len(curr_text.split()) < 1):
                 count += 1
             else:
-                count = max(0,count-2)
+                count = max(0,count-3)
 
             curr_no_of_words = len(curr_text.split())
-            to_reduce = curr_no_of_words - target_word_count
-            print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}")
+            # print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}")
 
 
         final_text = ". ".join(optimized_lines).strip()
-        print(f"length of Final text after shortening: {len(final_text.split())}")
+        # print(f"length of Final text after shortening: {len(final_text.split())}")
         return final_text
+    
+
+# ToDo:
+# implement logic to icnrease the no fo words in case
+# implement fallback logic to tell the user 
+# implement logic to firstly fix the grammar of the given text
+# the llm is probably hallucinating casue in the slightly shorten logic, it is icnreasing the no fo words drasticallly 
