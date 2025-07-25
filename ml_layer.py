@@ -9,15 +9,42 @@ class ML:
 
 
     def process_text(self):
+
+        input_text = self.fix_syntax_and_grammar(self.input_text)
+        print(input_text)
+
         # Placeholder for text processing logic
         if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
-            processed_text = self.process_concisely(self.input_text)
+            processed_text = self.process_concisely(input_text)
             return processed_text, len(processed_text.split())
 
         elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
-            processed_text = self.process_short(self.input_text)
+            processed_text = self.process_short(input_text)
             return processed_text, len(processed_text.split())
-        
+
+
+    def fix_syntax_and_grammar(self,input_text):
+
+        system_prompt_segment = (
+            "You are an intelligent grammatical fixer.\n"
+            "Given a large block of text, fix its grammar.\n"
+            "You may only fix punctuation if it is clearly incorrect.\n"
+            "**Do not summarize, rephrase, or alter the content****"
+            "Do not summarize or rewrite the text in any way."
+            "Return ONLY the revised **gramatically corrected paragraph**. Do not explain anything."
+        )
+
+        segment_response = self.client.responses.create(
+            model="gpt-4.1",
+            input=input_text,
+            top_p=0.3,
+            instructions=system_prompt_segment
+        )
+
+        segmented_text = segment_response.output[0].content[0].text.strip()
+
+        return segmented_text 
+
 
     """
     My logic for processign concisley is that 
@@ -68,9 +95,8 @@ class ML:
         print('Percentage to reduce:', to_reduce_percentage)
         print("\n")
 
-  
         count = 0
-        while(to_reduce_percentage > 0.05) and count<10:
+        while(to_reduce_percentage > 0.1) and count<5:
 
             # Step 2: Concisely rewrite each chunk
             system_prompt_concise = f"""
@@ -126,6 +152,8 @@ class ML:
 
         return final_output
     
+
+
     """
     Iterate through each line of the input text. For every line, provide the previous, current, and next lines to the LLM,
     asking it to shorten the current line without changing its meaning or tone. Accept the shortened version only if it
@@ -229,9 +257,31 @@ class ML:
         # print(f"length of Final text after shortening: {len(final_text.split())}")
         return final_text
     
+    def increase_words(self,input_text):
+        pass
+    
 
 # ToDo:
 # implement logic to icnrease the no fo words in case
 # implement fallback logic to tell the user 
-# implement logic to firstly fix the grammar of the given text
 # the llm is probably hallucinating casue in the slightly shorten logic, it is icnreasing the no fo words drasticallly 
+
+
+
+
+
+# Note:
+# set threshold of how much we can actually trim  by...we actulaly want to trim as much as its possible
+# tell the user if it would be possible or not.
+
+# gramatical and syntax fix
+
+# concise - tool to make cocnise output...have to ensure that the end blob doesnt become like one line 
+# put 2 blobs at once to make the text greater until the blob is the complete text
+
+# shorten - tool to slightly shorten...
+
+# tool to icnrease the no of words if required
+
+
+# i think the no of blobs taken at once should increment by 1 every time you reach the threshold
