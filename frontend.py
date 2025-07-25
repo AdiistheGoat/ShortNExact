@@ -7,12 +7,23 @@ from gradio.themes.utils import colors, fonts
 
 class frontend:
 
-    # intializing the frontend class
     def __init__(self):
+        """Frontend class for handling the UI and backend interaction."""
         self.client = None
 
     # function to validate input text and number of words
     def validate_input(self,input_text,noOfWords,option):
+        """
+        Validate the user's input parameters.
+
+        Args:
+            input_text (str): The input paragraph.
+            noOfWords (int): Desired word count.
+            option (str): Processing mode selected by user.
+
+        Returns:
+            str: Empty string if valid, else an error message.
+        """
         if not (option):
             return "Please select an option."
         if not input_text.strip():
@@ -21,8 +32,17 @@ class frontend:
             return "Input text needs to be longer than the number of words you want to shorten it to."
         return ""
     
-    # function to process the endpoint
+
     def process_endpoint(self,endpoint):
+        """
+        Set up the OpenAI API client with the given endpoint.
+
+        Args:
+            endpoint (str): OpenAI API key.
+
+        Raises:
+            gr.Error: If the client initialization fails.
+        """
         try:
             client = openai.OpenAI(api_key=endpoint)
             self.client = client
@@ -33,6 +53,17 @@ class frontend:
 
     # function to process the input text
     def process(self,inputText, noOfWords, option):
+        """
+        Process and validate the input text using the selected option via ML class.
+
+        Args:
+            inputText (str): The text to process.
+            noOfWords (int): Desired word count.
+            option (str): Selected processing option.
+
+        Returns:
+            tuple: Processed text and its word count.
+        """
 
         # validate the input
         validation = self.validate_input(inputText, noOfWords,option)
@@ -48,7 +79,12 @@ class frontend:
 
     # function to create the Gradio interface and launch the app
     def demo(self):
+        """
+        Build and launch the Gradio user interface.
 
+        Creates interactive components for input, configuration,
+        and displaying processed output.
+        """
         demo = gr.Blocks(theme=gr.themes.Soft())
 
         with demo:
@@ -103,12 +139,9 @@ if __name__ == "__main__":
 # 	•	You might not even have permission to install them
 # 	•	The base image may lack things like build-essential or gcc
 
-
 # in most real-world setups, the frontend (React) and backend (Flask/FastAPI) are hosted separately, unless you’re building a monolithic app.
-
 # 	•	Frontend (React) → hosted on Vercel, Netlify, or S3 + CloudFront
 # 	•	Backend (Flask) → hosted on Render, Railway, Heroku, or EC2
-
 
 # If you use a prebuilt in-process library (like cachetools, ratelimit, or flask-limiter without Redis backend), here’s what happens:
 # 	•	It stores limits in memory, local to that Python process
