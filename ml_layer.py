@@ -2,6 +2,15 @@ import openai
 class ML: 
 
     def __init__(self, input_text, number_of_words, option,client):
+        """
+        Initialize the ML class with input parameters.
+
+        Args:
+            input_text (str): The raw input text to be processed.
+            number_of_words (int): The target word count for the output.
+            option (str): Mode of processing — either concise summarization or slight shortening.
+            client (OpenAI client): OpenAI-compatible client to call language model API.
+        """
         self.input_text = input_text
         self.number_of_words = number_of_words
         self.option = option    
@@ -9,7 +18,17 @@ class ML:
 
 
     def process_text(self):
+        """
+        Main entry point to process the input text based on the specified option.
 
+        First, it performs grammar and punctuation correction on the input text.
+        Then it either:
+            - Concisely rephrases it while maintaining ideas (if option is 'concisely present ideas'), or
+            - Slightly shortens it to fit within a word limit (if option is 'shorten text').
+
+        Returns:
+            Tuple[str, int]: A tuple of processed text and the number of words in the final output.
+        """
         input_text = self.fix_syntax_and_grammar(self.input_text)
         print(input_text)
 
@@ -24,6 +43,14 @@ class ML:
 
 
     def fix_syntax_and_grammar(self,input_text):
+        """
+        Fixes grammar and punctuation issues in the input text using an LLM.
+        Args:
+            input_text (str): Raw input text with potential grammar issues.
+
+        Returns:
+            str: Cleaned-up version of the input with corrected grammar and punctuation.
+        """
 
         system_prompt_segment = (
             "You are an intelligent grammatical fixer.\n"
@@ -46,19 +73,18 @@ class ML:
         return segmented_text 
 
 
-    """
-    My logic for processign concisley is that 
-    -- seprate the text into differen parts to clearly demarcate it 
-    -- then for each core idea, present it in a slightly concise manner such that it doesnt chnage the core sematic menaing, wording and flow
-
-    then use the process_short function to shorten the text to fit within the word count
-    divide the rquired word count for every chunk wrt to their length
-    """
     def process_concisely(self,input_text):
         """
-        Step 1: Ask LLM to segment the text into meaningful idea-based chunks.
-        Step 2: For each chunk, ask the LLM to make it more concise while preserving meaning and tone.
-        Step 3: Rejoin the refined chunks.
+        Creates a semantically concise version of the input text.
+
+        Logic:
+            1. Splits text into idea-based segments using an LLM.
+            2. Iteratively reduces each chunk's length while preserving meaning and tone.
+            3. Stops once the overall word count is close to or below the target.
+            4. Applies fine-grained line-by-line shortening at the end for final polishing.
+
+        Returns:
+            str: Final version of the text, concisely rewritten to match the word budget.
         """
 
         # Step 1: Ask LLM to break input into coherent idea-level chunks
@@ -96,7 +122,20 @@ class ML:
         print("\n")
 
         count = 0
-        while(to_reduce_percentage > 0.1) and count<5:
+        while(to_reduce_percentage > 0.2):
+
+            if(count>=5):
+                count = 0
+                new_blobs = []
+                for index in range(0,len(curr_blobs),2):
+                    cumulative_blob = ""
+                    for j in range(index,min(index+2,len(curr_blobs))):
+                        cumulative_blob += curr_blobs[j]
+                    new_blobs.append(cumulative_blob)
+                if(len(new_blobs)==curr_blobs):
+                    break
+                curr_blobs = new_blobs
+
 
             # Step 2: Concisely rewrite each chunk
             system_prompt_concise = f"""
@@ -135,13 +174,14 @@ class ML:
             delta =  to_reduce+target_word_count - curr_no_of_words 
 
             # hardocoded condition to ensure decent progress
-            if(delta<=0):
-                count+=1
+            if(delta/to_reduce<=0.1):
+                count+=2
             else:
-                count = max(0,count-2)
+                count = max(0,count-1)
 
             to_reduce = curr_no_of_words - target_word_count
             to_reduce_percentage = (to_reduce)/ curr_no_of_words
+
 
             print('Current word count:', curr_no_of_words)
             print('Words to reduce:', to_reduce)
@@ -154,13 +194,19 @@ class ML:
     
 
 
-    """
-    Iterate through each line of the input text. For every line, provide the previous, current, and next lines to the LLM,
-    asking it to shorten the current line without changing its meaning or tone. Accept the shortened version only if it
-    reduces the word count. Stop once the total number of reduced words reaches the target.
-    """
     def process_short(self,input_text):
+        """
+        Slightly shortens the input text to fit within the specified word count.
 
+        Logic:
+            - Split text into lines.
+            - Use LLM to shorten each line while preserving meaning.
+            - Accept only if it reduces word count.
+            - Repeat until target is met or no progress seems possible.
+
+        Returns:
+            str: Slightly shortened text, preserving semantics and readability.
+        """
         # Logic to shorten text to fit within a specified word count
         target_word_count = self.number_of_words
 
@@ -171,7 +217,7 @@ class ML:
             "**Shorten the line plsss*"
             "**ensure to make progress towards reducing the word count by some words**"
             "- Try to maintain the core meaning while shortening as many words as possible should be the first priority"
-            "- Keep the tone and the voice(passive voice, active voice) same.\n"
+            "- Keep the tone , tense(present tense, past tense, future tense) the voice(passive voice, active voice) same.\n"
             "The max no of words you can reduce the sentence by is given to you as well"
             "Dont comprompise on grammar rules"
 
@@ -250,7 +296,7 @@ class ML:
                 count = max(0,count-3)
 
             curr_no_of_words = len(curr_text.split())
-            # print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}")
+            print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}")
 
 
         final_text = ". ".join(optimized_lines).strip()
@@ -271,7 +317,7 @@ class ML:
 
 
 # Note:
-# set threshold of how much we can actually trim  by...we actulaly want to trim as much as its possible
+# set threshold of how much we can actually trim  by...we actually want to trim as much as its possible
 # tell the user if it would be possible or not.
 
 # gramatical and syntax fix
@@ -285,3 +331,16 @@ class ML:
 
 
 # i think the no of blobs taken at once should increment by 1 every time you reach the threshold
+
+
+# Iterative thoughts on the ML workflow: 
+
+# I think these two functions should be thought of as tools 
+# one concises , the other slightly shortens , and the other icnreases soem words
+
+# I think having concised more is not the problem , the problem would be if we are far away from concising
+
+# which is better to give to the llm for cocnsie fucntion: i think we should put percentage only and not max no of words since you need to 
+# tell how much to be concise...
+
+
