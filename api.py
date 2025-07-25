@@ -7,10 +7,13 @@ import time
 from fastapi import Request
 
 app = FastAPI()
-r = redis.Redis(host='localhost',port = 6379, db=0)
 
-RATE_LIMIT = 100       # Max 100 requests
-WINDOW_SIZE = 60       # Time window in seconds
+# Initialize Redis for rate limiting
+r = redis.Redis(host='localhost', port=6379, db=0)
+
+# Rate limit config: 100 requests per 60 seconds per IP
+RATE_LIMIT = 100
+WINDOW_SIZE = 60
 
 # Define request model
 class Item(BaseModel):
@@ -20,8 +23,16 @@ class Item(BaseModel):
     no_of_words: int
 
 
-# function to process the endpoint
 def process_endpoint(key: str):
+    """
+    Validates and initializes OpenAI client using the given API key.
+
+    Args:
+        key (str): OpenAI API key.
+
+    Returns:
+        openai.OpenAI: Initialized client if key is valid, otherwise None.
+    """
     try:
         client = openai.OpenAI(api_key=key)
         client.models.list()
@@ -31,8 +42,18 @@ def process_endpoint(key: str):
         return None
 
 
-# function to validate input text and number of words
 def validate_input(option:int, input_text:str, no_of_words:int):
+    """
+    Validates the text processing input parameters.
+
+    Args:
+        option (int): Processing mode.
+        input_text (str): Input text to validate.
+        no_of_words (int): Target word count.
+
+    Returns:
+        str | None: Validation error message or None if valid.
+    """
     if(option <=0) or (option>2):
         return "Please select an option."
     if not input_text.strip():
@@ -43,6 +64,15 @@ def validate_input(option:int, input_text:str, no_of_words:int):
 
 
 def rate_limiter(request: Request):
+    """
+    Enforces rate limiting using a sliding window algorithm via Redis.
+
+    Args:
+        request (Request): Incoming HTTP request.
+
+    Returns:
+        dict | None: Error message if limit exceeded, else None.
+    """
     ip = request.client.host
     key = f"{ip}"
     now = time.time()
@@ -61,9 +91,19 @@ def rate_limiter(request: Request):
     if len(valid_timestamps) > RATE_LIMIT:
         return {"error": "Rate Limit Exceeded"}
 
-# Home route
+
 @app.get("/")
 def read_root(item: Item,request: Request):
+    """
+    API root endpoint that processes input text based on selected option.
+
+    Args:
+        item (Item): Input data including API key, text, and config.
+        request (Request): FastAPI request object (for rate limiting).
+
+    Returns:
+        dict: Processed text and word count, or error message.
+    """
     rate_limiter(request)
     api_key = item.api_key
     option = item.option
