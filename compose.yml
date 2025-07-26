@@ -1,0 +1,25 @@
+name: short_and_exact
+
+services:
+        api:
+              image: api_img
+              deploy:
+                resources:
+                  limits:
+                    memory: 3g
+              ports:
+                - "8000:7860"              
+# the port 7860 has specfied to be already expose ...we are specify it to be exposed to the 8000 port of the local computer.
+# Any request recieved by the former will be forwarded to the latter
+# in the api docker image, we have specified that the api runs on port 7860 internally
+
+        redis:
+              image: redis:7.2
+              deploy:
+                resources:
+                  limits:
+                    memory: 1g
+# we dont need to expose any port of the redis container to the local computer port 
+# redis interally runs on port 6379
+
+

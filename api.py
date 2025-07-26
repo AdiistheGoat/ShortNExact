@@ -9,7 +9,7 @@ from fastapi import Request
 app = FastAPI()
 
 # Initialize Redis for rate limiting
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(host='redis', port=6379, db=0)
 
 # Rate limit config: 100 requests per 60 seconds per IP
 RATE_LIMIT = 100

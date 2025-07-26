@@ -150,5 +150,18 @@ if __name__ == "__main__":
 
 
 
+# No need to expose ports for inter-container communication!
+
+# A Docker container itself doesn’t run on a port — rather, the applications inside the container open ports
+# (like FastAPI on 8000), and Docker optionally maps those to ports on your host machin
+
+
+# If you have built a Docker image of your application and:
+# 	•	Pushed it to Docker Hub (or any registry), or
+# 	•	Sent the .tar file (via docker save),
+
+# then your friend can recreate and run your full app — with all dependencies, environment, and setup — just by running that image.
+
+
 # blackscoles
 # ito calculus
