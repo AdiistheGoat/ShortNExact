@@ -136,7 +136,7 @@ class ML:
         count = 0
         while(True):
 
-            if(count>=2):
+            if(count>=3):
                 if(len(curr_blobs)==1):
                     break
                 count = 0
@@ -146,6 +146,8 @@ class ML:
                     for j in range(index,min(index+2,len(curr_blobs))):
                         cumulative_blob += curr_blobs[j]
                     new_blobs.append(cumulative_blob)
+                print(len(curr_blobs))
+                print(len(new_blobs))
                 curr_blobs = new_blobs
 
 
@@ -256,7 +258,7 @@ class ML:
         """ hardocded condition to ensure decent progress. We need to intergate this so that the
         LLM does not get stuck in a generation loop when it is unable to reduce the text further"""
         count = 0
-        while(to_reduce > 0) and count<2:
+        while(to_reduce > 0) and count<3:
 
             for i, line in enumerate(optimized_lines):
                 if to_reduce <= 0:
@@ -315,8 +317,19 @@ class ML:
     Slightly increases the no of words to the desired word count by increasing content examples
     """
     def increase_words(self,input_text):
+        """
+        Expands an already input_text to reach a target word count.
+        
+        The goal is to safely increase the number of words while preserving the original tone, 
+        meaning, grammar, tense, and voice. The LLM is guided to use techniques like adding examples, 
+        using descriptive synonyms, or elaborating on short phrases.
 
-        print("Starting to increase")
+        Parameters:
+            input_text (str): The base text to be expanded.
+
+        Returns:
+            str: An expanded version of the input text, closer to the target word count.
+        """
 
         # Logic to shorten text to fit within a specified word count
         target_word_count = self.number_of_words
@@ -361,11 +374,11 @@ class ML:
         print(f"Original word count: {curr_no_of_words}, Target word count: {target_word_count}, Words to increase: {to_increase}")
 
         count = 0
-        while(to_increase > 0) and count<10:
+        while(to_increase > 0) and count<3:
 
             for i, line in enumerate(optimized_lines):
                 if to_increase <= 0:
-                    break  # Stop if target met
+                    break  
 
                 user_input = (
                     f"Current line:\n{line}\n\n"
@@ -413,9 +426,19 @@ class ML:
     Slightly increases the no of words to the desired word count by decreasing some content examples
     """
     def decrease_words(self,input_text):
+        """
+        Further shortens an already condensed input_text to reach a target word count.
+        
+        This function assumes the input text has already been pre-shortened once.
+        It iteratively refines each line using an LLM to reduce examples, modifiers,
+        and redundancy while preserving meaning, grammar, and structure.
 
+        Parameters:
+            input_text (str): Previously shortened text that still needs to be reduced.
 
-        print("Starting to decrease")
+        Returns:
+            str: A further optimized, shorter version of the input text.
+        """
 
         # Logic to shorten text to fit within a specified word count
         target_word_count = self.number_of_words
@@ -461,12 +484,11 @@ class ML:
         """ hardocded condition to ensure decent progress. We need to intergate this so that the
         LLM does not get stuck in a generation loop when it is unable to reduce the text further"""
         count = 0
-        while(to_reduce > 0) and count<2:
+        while(to_reduce > 0) and count<3:
 
             for i, line in enumerate(optimized_lines):
                 if to_reduce <= 0:
-                    print("breaking before")
-                    break  # Stop if target met
+                    break  
 
                 user_input = (
                     f"Current line:\n{line}\n\n"
@@ -509,8 +531,6 @@ class ML:
     
 
 # ToDo:
-# implement logic to very slightly icnrease the no of words in case
-# implement logic to very slightly decrease the no of words in case
 # implement fallback logic to tell the user 
 # fix the .. part
 
