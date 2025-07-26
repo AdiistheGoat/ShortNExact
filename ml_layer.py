@@ -137,7 +137,9 @@ class ML:
         count = 0
         while(True):
 
-            if(count>=5):
+            if(count>=2):
+                if(len(curr_blobs)==1):
+                    break
                 count = 0
                 new_blobs = []
                 for index in range(0,len(curr_blobs),2):
@@ -145,10 +147,6 @@ class ML:
                     for j in range(index,min(index+2,len(curr_blobs))):
                         cumulative_blob += curr_blobs[j]
                     new_blobs.append(cumulative_blob)
-                print(len(new_blobs))
-                print(len(curr_blobs))
-                if(len(new_blobs)== len(curr_blobs)):
-                    break
                 curr_blobs = new_blobs
 
 
@@ -192,8 +190,7 @@ class ML:
 
             # hardocoded condition to ensure decent progress
             if(delta/to_reduce<=0.1):
-                count+=2
-                print("count: " + str(count))
+                count+=1
             else:
                 count = max(0,count-1)
 
@@ -319,7 +316,7 @@ class ML:
         return final_text
     
     """
-    Slightly increases the no of words to the desired word count
+    Slightly increases the no of words to the desired word count by increasing content examples
     """
     def increase_words(self,input_text):
         # Logic to shorten text to fit within a specified word count
@@ -357,10 +354,6 @@ class ML:
 
         print(f"Original word count: {curr_no_of_words}, Target word count: {target_word_count}, Words to increase: {to_increase}")
 
-
-
-        """ hardocded condition to ensure decent progress. We need to intergate this so that the
-        LLM does not get stuck in a generation loop when it is unable to reduce the text further"""
         count = 0
         while(to_increase > 0) and count<10:
 
@@ -411,7 +404,7 @@ class ML:
 
 
     """
-    Slightly increases the no of words to the desired word count
+    Slightly increases the no of words to the desired word count by decreasing some content examples
     """
     def decrease_words(self,input_text):
         pass
@@ -421,8 +414,8 @@ class ML:
 # ToDo:
 # implement logic to very slightly icnrease the no of words in case
 # implement logic to very slightly decrease the no of words in case
-# fix bugs in make it concise logic
 # implement fallback logic to tell the user 
+# fix the .. part
 
 
 
