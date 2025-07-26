@@ -123,7 +123,6 @@ class ML:
         target_word_count = self.number_of_words
         print('Target word count:', target_word_count)
 
-        # curr_no_of_words = len(final_output.split())
         curr_no_of_words = self.count_words(final_output)
 
         to_reduce = curr_no_of_words - target_word_count
@@ -181,9 +180,7 @@ class ML:
                 curr_blobs[index] = refined
 
             # Step 3: Combine all refined chunks
-            # ToDo: fix this clean variables workflow
             final_output = "\n\n".join(curr_blobs).strip()
-            # curr_no_of_words = len(final_output.split())
             curr_no_of_words = self.count_words(final_output)
 
             delta =  to_reduce+target_word_count - curr_no_of_words 
@@ -241,8 +238,6 @@ class ML:
         )
 
         curr_text = input_text.strip()
-
-        # curr_no_of_words = len(curr_text.split())
         curr_no_of_words = self.count_words(curr_text)
 
         optimized_lines = sent_tokenize(curr_text)
@@ -268,9 +263,6 @@ class ML:
                     print("breaking before")
                     break  # Stop if target met
 
-                # prev_line = optimized_lines[i - 1] if i > 0 else ""
-                # next_line = optimized_lines[i + 1] if i < len(optimized_lines) - 1 else ""
-
                 user_input = (
                     f"Current line:\n{line}\n\n"
                     f"Max no words you can reduce: {to_reduce}"
@@ -284,10 +276,7 @@ class ML:
                 )
 
                 shortened = response.output[0].content[0].text.strip()
-                # print(shortened)
 
-                #ToDo:
-                # old_len and new_len are decreased by one or remain same every time but delta remains the same
                 # Update word budget
                 old_len = self.count_words(line)
                 new_len = self.count_words(shortened)
@@ -310,21 +299,38 @@ class ML:
 
 
         final_text = ". ".join(optimized_lines).strip()
-        # print(f"length of Final text after shortening: {len(final_text.split())}")
+        final_no_of_words = self.count_words(final_text)
 
-        # return self.increase_words(final_text)
-        return final_text
+        print("Final no of words: " + str(final_no_of_words))
+
+        if(final_no_of_words==self.number_of_words):
+            return final_text
+        if(final_no_of_words>self.number_of_words):
+            return self.decrease_words(final_text)
+        else:
+            return self.increase_words(final_text) 
+
     
     """
     Slightly increases the no of words to the desired word count by increasing content examples
     """
     def increase_words(self,input_text):
+
+        print("Starting to increase")
+
         # Logic to shorten text to fit within a specified word count
         target_word_count = self.number_of_words
 
         # System prompt
         system_prompt = (
             "Your job is to increase the number of words for a line"
+
+            "You may consider using any of the following techniques:\n"
+            "- Expand abbreviated phrases (e.g., 'e.g.' → 'for example')\n"
+            "- Replace single words with more descriptive phrases (e.g., 'AI' → 'artificial intelligence systems')\n"
+            "- Add light clarification or qualifiers (e.g., 'globally' → 'across various parts of the world')\n"
+            "- Use synonyms that are longer but equivalent in meaning (e.g., 'help' → 'provide assistance')\n"
+            "- Insert non-redundant adjectives or modifiers (e.g., 'growth' → 'rapid technological growth')\n"
 
             "**ensure to make progress towards reducing the word count by some words**"
             "- Try to maintain the core meaning while increasing the no of words should be the first priority"
@@ -407,7 +413,98 @@ class ML:
     Slightly increases the no of words to the desired word count by decreasing some content examples
     """
     def decrease_words(self,input_text):
-        pass
+
+
+        print("Starting to decrease")
+
+        # Logic to shorten text to fit within a specified word count
+        target_word_count = self.number_of_words
+
+        # System prompt
+        system_prompt = (
+            "You are a text shortener"
+
+            "The line you are given has already been shortened once.\n"
+
+            "You may consider possibilities such as:\n"
+            "- Removing examples if they are non-essential\n"
+            "- Eliminating redundant words or phrases\n"
+            "- Merging ideas or compressing expressions\n"
+            "- Cutting weak modifiers (e.g., very, really) where safe\n\n"
+
+            "Rules: "
+            "- **ensure to make progress towards reducing the word count by some words**"
+            "- Try to maintain the core meaning while shortening as many words as possible should be the first priority"
+            "- Keep the tone , tense(present tense, past tense, future tense) the voice(passive voice, active voice) same.\n"
+            "- The max no of words you can reduce the sentence by is given to you as well"
+            "- Dont comprompise on grammar rules"
+            "- Dont keep a full stop at the end of the line.\n"
+            "- Only return the improved version of the **CURRENT line** — nothing else."
+        )
+
+        curr_text = input_text.strip()
+        curr_no_of_words = self.count_words(curr_text)
+
+        optimized_lines = sent_tokenize(curr_text)
+        for i in range(len(optimized_lines)):
+            optimized_lines[i] = optimized_lines[i].strip()
+
+        for i in range(len(optimized_lines)):
+            line = optimized_lines[i]
+            if not(line):
+                optimized_lines.pop(i)
+
+        to_reduce = curr_no_of_words - target_word_count
+
+        print(f"Original word count: {curr_no_of_words}, Target word count: {target_word_count}, Words to reduce: {to_reduce}")
+
+        """ hardocded condition to ensure decent progress. We need to intergate this so that the
+        LLM does not get stuck in a generation loop when it is unable to reduce the text further"""
+        count = 0
+        while(to_reduce > 0) and count<2:
+
+            for i, line in enumerate(optimized_lines):
+                if to_reduce <= 0:
+                    print("breaking before")
+                    break  # Stop if target met
+
+                user_input = (
+                    f"Current line:\n{line}\n\n"
+                    f"Max no words you can reduce: {to_reduce}"
+                )
+
+                response = self.client.responses.create(
+                    model="gpt-4.1",
+                    input = f"{user_input}",
+                    top_p = 0.3,
+                    instructions = system_prompt
+                )
+
+                shortened = response.output[0].content[0].text.strip()
+
+                # Update word budget
+                old_len = self.count_words(line)
+                new_len = self.count_words(shortened)
+                delta = old_len - new_len
+
+                if delta > 0:
+                    optimized_lines[i] = shortened
+                    to_reduce -= delta
+
+
+            curr_text = ". ".join(optimized_lines).strip()
+
+            if(curr_no_of_words - self.count_words(curr_text) < 1):
+                count += 1
+            else:
+                count = max(0,count-1)
+
+            curr_no_of_words = self.count_words(curr_text)
+            print(f"Current word count: {curr_no_of_words}, Words to reduce: {to_reduce}")
+
+        final_text = ". ".join(optimized_lines).strip()
+
+        return final_text
 
     
 
