@@ -1,4 +1,4 @@
 venv/
 *.rdb
 .gradio/
-./__pycache__/
+__pycache__/
