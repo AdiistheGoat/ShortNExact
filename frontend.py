@@ -11,7 +11,6 @@ class frontend:
         """Frontend class for handling the UI and backend interaction."""
         self.client = None
 
-    # function to validate input text and number of words
     def validate_input(self,input_text,noOfWords,option):
         """
         Validate the user's input parameters.
@@ -51,7 +50,6 @@ class frontend:
             raise gr.Error(f"{e}")
 
 
-    # function to process the input text
     def process(self,inputText, noOfWords, option):
         """
         Process and validate the input text using the selected option via ML class.
@@ -77,7 +75,6 @@ class frontend:
         return processed_text,processed_text_length
     
 
-    # function to create the Gradio interface and launch the app
     def demo(self):
         """
         Build and launch the Gradio user interface.
