@@ -135,7 +135,7 @@ class ML:
         print("\n")
 
         count = 0
-        while(to_reduce_percentage > 0.2):
+        while(True):
 
             if(count>=5):
                 count = 0
@@ -145,7 +145,9 @@ class ML:
                     for j in range(index,min(index+2,len(curr_blobs))):
                         cumulative_blob += curr_blobs[j]
                     new_blobs.append(cumulative_blob)
-                if(len(new_blobs)==curr_blobs):
+                print(len(new_blobs))
+                print(len(curr_blobs))
+                if(len(new_blobs)== len(curr_blobs)):
                     break
                 curr_blobs = new_blobs
 
@@ -191,6 +193,7 @@ class ML:
             # hardocoded condition to ensure decent progress
             if(delta/to_reduce<=0.1):
                 count+=2
+                print("count: " + str(count))
             else:
                 count = max(0,count-1)
 
@@ -261,7 +264,7 @@ class ML:
         """ hardocded condition to ensure decent progress. We need to intergate this so that the
         LLM does not get stuck in a generation loop when it is unable to reduce the text further"""
         count = 0
-        while(to_reduce > 0) and count<10:
+        while(to_reduce > 0) and count<2:
 
             for i, line in enumerate(optimized_lines):
                 if to_reduce <= 0:
@@ -294,11 +297,6 @@ class ML:
                 delta = old_len - new_len
 
                 if delta > 0:
-                    print(old_len)
-                    print(new_len)
-                    print(delta)
-                    print(line)
-                    print(shortened)
                     optimized_lines[i] = shortened
                     to_reduce -= delta
 
@@ -421,9 +419,10 @@ class ML:
     
 
 # ToDo:
-# implement logic to icnrease the no fo words in case
+# implement logic to very slightly icnrease the no of words in case
+# implement logic to very slightly decrease the no of words in case
+# fix bugs in make it concise logic
 # implement fallback logic to tell the user 
-# the llm is probably hallucinating casue in the slightly shorten logic, it is icnreasing the no fo words drasticallly 
 
 
 
