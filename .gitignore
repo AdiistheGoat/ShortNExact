@@ -2,3 +2,6 @@ venv/
 *.rdb
 .gradio/
 __pycache__/
+postgre_db/
+redis-data/
+./start.sh

@@ -12,11 +12,11 @@ import sqlalchemy as db
 import secrets
 
 # DEFINE THE DATABASE CREDENTIALS
-user = 'postgres'
+user = 'Aditya Goyal'
 password = 'cold feather'
-host = '127.0.0.1'
+host = 'db'
 port = 5432
-database = 'postgres'
+database = 'short_and_exact'
 
 # Establish a connection to the PostgreSQL database
 try: 
@@ -24,6 +24,14 @@ try:
     conn = engine.connect()
 except Exception as e:
     print("Connection could not be made due to the following error: \n", e)
+
+
+# Create inspector
+inspector = inspect(engine)
+
+# Get table names
+tables = inspector.get_table_names()
+print("Tables in the database:", tables)
 
 # Reflect existing 'api_keys' table from the database
 meta = MetaData()
@@ -74,9 +82,9 @@ def validate_api_key(name,email,validity):
     if(validity>31):
         return "You cannot get an api key with validity for more than 31 days"
     
-    timedelta(days=1)
+    one_day_time = timedelta(days=1)
     time_now = datetime.now()
-    query = select(func.count()).where(api_keys.c.name == name,api_keys.c.email==email,api_keys.time>=time_now-timedelta)
+    query = select(func.count()).where(api_keys.c.name == name,api_keys.c.email==email,api_keys.c.time>=time_now-one_day_time)
     count = int(conn.execute(query).fetchall()[0][0])
     if(count==MAX_API_KEYS_LAST_24_HOURS):
         return "You have exhausted your limit for the creation of the api_keys. Pls try again tomorrow"
@@ -296,3 +304,26 @@ def generate_key(item: Auth,request: Request):
 # for column in columns:
 #     print(f"Name: {column['name']}, Type: {column['type']}, Nullable: {column['nullable']}, Default: {column.get('default')}")
 
+
+
+# Questions
+
+# we have to ensure the data stays in the postgres db , we cant initialise a new one every time..old data will be lose
+# so, i dont think we can use a ready made image 
+
+# i feel the same for redis , rate limiting as well although its a very shorter time frame 
+
+# soln:
+# use volumes
+
+
+# we have a seprate frontend, and another backend....we have soem backend logic in frontend obvisously...
+# but in prod and in industry, is frotnend and api sperate but some processing and validation logic could be similar
+
+# What about rate limiting for frontend?
+
+# soln:
+# for fronted, go through api_gateway 
+
+
+# You would need intialisation files like init.sql apart from the docker images as well, right? 

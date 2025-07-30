@@ -7,6 +7,11 @@ services:
                 resources:
                   limits:
                     memory: 3g
+              depends_on:
+                db:
+                  condition: service_healthy
+                redis:
+                  condition: service_healthy
               ports:
                 - "8000:7860"              
 # the port 7860 has specfied to be already expose ...we are specify it to be exposed to the 8000 port of the local computer.
@@ -14,12 +19,57 @@ services:
 # in the api docker image, we have specified that the api runs on port 7860 internally
 
         redis:
-              image: redis:7.2
+              image: redis:6.2-alpine   # smaller version of redis
+              restart: always   # Ensures the container restarts automatically if it crashes
               deploy:
                 resources:
                   limits:
                     memory: 1g
+
+              healthcheck:
+                test: ["CMD", "redis-cli", "ping"]
+                interval: 30s
+                timeout: 3s
+                retries: 3
+                start_period: 20s
+
+              ports:
+                - "6379:6379"
+              command: redis-server --save 10 1 --loglevel warning  # overrirding the command in the redis docker image
+              volumes:
+                - ./redis-data:/data
 # we dont need to expose any port of the redis container to the local computer port 
 # redis interally runs on port 6379
 
+        db:
+          image: postgres  # latest stable image of postgres SQL
 
+          restart: always # Ensures the container restarts automatically if it crashes
+
+          environment:
+            POSTGRES_DB: "short_and_exact" # Sets the default database name
+            POSTGRES_USER: "Aditya Goyal" # Sets the default user for the database
+            POSTGRES_PASSWORD: "cold feather" # Sets the password for the default user
+
+          deploy: 
+            resources:
+              limits:
+                memory: 3g
+
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 30s
+            timeout: 3s
+            retries: 3
+            start_period: 30s
+            
+          ports:
+            - 5432:5432
+
+          volumes:
+            - ./postgre_db:/var/lib/postgresql/data
+            - ./init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+
+
+# integrating contianer monitoring and handling dependcies 
+# using healthchecks and depends on

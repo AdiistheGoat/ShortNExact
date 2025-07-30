@@ -178,7 +178,16 @@ if __name__ == "__main__":
 # you need to have acess to the actual db and hsot it in a containerized enviroment , otherwise its just the data at the 
 # container layer and you will lose it. 
 
+# Avoid: 
+# 	•	Running init logic unconditionally every time app starts.
+# 	•	Deleting init scripts after execution manually (makes containers non-reproducible).
 
+
+# database Migrations = version control for your database schema.
+    
+# make your application reproducible
+# concentrate your logic in only one place. make systems decoupled
+# get off local, thinkign baout things like latency per user, load testing is really improtnat as u scale your application
 
 # blackscoles
 # ito calculus
