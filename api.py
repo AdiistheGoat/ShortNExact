@@ -1,3 +1,4 @@
+# Import necessary modules and libraries
 from ml_layer import ML
 from fastapi import FastAPI,Depends,HTTPException
 from pydantic import BaseModel
@@ -17,16 +18,18 @@ host = '127.0.0.1'
 port = 5432
 database = 'postgres'
 
+# Establish a connection to the PostgreSQL database
 try: 
     engine = create_engine(url="postgresql://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port, database))
     conn = engine.connect()
 except Exception as e:
     print("Connection could not be made due to the following error: \n", e)
 
-
+# Reflect existing 'api_keys' table from the database
 meta = MetaData()
 api_keys = db.Table('api_keys', meta,autoload_with=engine) #Table object
 
+# Initialize FastAPI application
 app = FastAPI()
 
 # Initialize Redis for rate limiting
@@ -35,21 +38,33 @@ r = redis.Redis(host='redis', port=6379, db=0)
 # Rate limit config: 100 requests per 60 seconds per IP
 MAX_API_KEYS_LAST_24_HOURS = 10
 
-# Define request model
+# Define request schema for main API functionality
 class Item(BaseModel):
-    llm_api_key: str
-    app_key: str
-    option: int
-    input_text: str
-    no_of_words: int
+    llm_api_key: str       # API key for the language model (e.g., OpenAI)
+    app_key: str           # User-provided application-specific key
+    option: int            # Option to select processing type or mode
+    input_text: str        # Text input to be processed
+    no_of_words: int       # Word count limit for processing output
 
+# Define request schema for API key generation
 class Auth(BaseModel):
-    name: str
-    email: str
-    validity: int
+    name: str              # User's name
+    email: str             # User's email address
+    validity: int          # Requested validity of the API key (in days)
 
 
 def validate_api_key(name,email,validity):
+    """
+    Validates the API key creation request based on input constraints.
+
+    Args:
+        name (str): Name of the user.
+        email (str): Email address of the user.
+        validity (int): Requested validity duration in days.
+
+    Returns:
+        str or None: Returns an error message string if validation fails, else None.
+    """
     if not(name):
         return "Name not Found"
     
@@ -59,7 +74,9 @@ def validate_api_key(name,email,validity):
     if(validity>31):
         return "You cannot get an api key with validity for more than 31 days"
     
-    query = select(func.count()).where(api_keys.c.name == name,api_keys.c.email==email)
+    timedelta(days=1)
+    time_now = datetime.now()
+    query = select(func.count()).where(api_keys.c.name == name,api_keys.c.email==email,api_keys.time>=time_now-timedelta)
     count = int(conn.execute(query).fetchall()[0][0])
     if(count==MAX_API_KEYS_LAST_24_HOURS):
         return "You have exhausted your limit for the creation of the api_keys. Pls try again tomorrow"
@@ -145,7 +162,7 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
 @app.get("/")
 def reduce_content(item: Item,request: Request):
     """
-    API root endpoint that processes input text based on selected option.
+    API endpoint that processes input text based on selected option.
 
     Args:
         item (Item): Input data including API key, text, and config.
@@ -154,9 +171,11 @@ def reduce_content(item: Item,request: Request):
     Returns:
         dict: Processed text and word count, or error message.
     """
+
     # RATE_LIMIT = 100
     # WINDOW_SIZE = 60
     # rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
+
     llm_api_key = item.llm_api_key
     option = item.option
     input_text = item.input_text
@@ -177,7 +196,7 @@ def reduce_content(item: Item,request: Request):
     time_expired = time_created + duration1
 
     if(time_expired<datetime.now()):
-        return {"error": "Key has expired"}
+        return {"error": "app Api Key has expired"}
     
 
     client = process_endpoint(key=llm_api_key)
@@ -205,6 +224,16 @@ def reduce_content(item: Item,request: Request):
 # when user provides an api key, 
 @app.get("/api_key")
 def generate_key(item: Auth,request: Request):
+    """
+    Endpoint to generate and return a new API key for valid user input.
+
+    Args:
+        item (Auth): User input containing name, email, and desired validity (in days).
+        request (Request): FastAPI request object (used for optional rate limiting).
+
+    Returns:
+        dict: A dictionary containing either the generated API key or an error message.
+    """
 
     # RATE_LIMIT = 1
     # WINDOW_SIZE = 60
@@ -227,46 +256,17 @@ def generate_key(item: Auth,request: Request):
 
 
 
-# curr.execute( f"""
-#  SELECT COUNT(*) FROM api_keys
-#  WHERE name = {name}
-#    AND email = {email}
-#    AND validity = {validity} 
-#    AND time            
-#  VALUES ({name},{email},{validity},{time});
-# """)
-
-# output = curr.fetchall()
-
-# # see how many keys have already been created by the user , block if it exceeds some number for today
-# curr.execute( f"""
-#  INSERT INTO api_keys (name, email, validity,time)
-#  VALUES (%s,%s,,{time});
-# """)
-
-# database schema for the table 
-# curr.execute("""
-# CREATE TABLE api_keys (
-#   name TEXT,
-#   email TEXT,
-#   time TIMESTAMP,
-#   validity INT        
-# );
-#  """)
-
-# conn = psycopg2.connect(
-#     user="postgres",
-#     password="cold feather",
-#     host="localhost",
-#     port=5432
-# )
-# conn.autocommit = True
-# curr = conn.cursor()
-
 
 # meta = MetaData()
 # # api_keys = db.Table('api_keys', meta,autoload_with=engine) #Table object
 # # api_keys.drop(engine, checkfirst=True)
+
+# table_to_delete = meta.tables['api_keys']
+# # Remove the table from metadata
+# meta.remove(table_to_delete)
+
+# meta.create_all(engine)
+# conn.commit()
 
 # table_to_delete = meta.tables['api_keys']
 # # Remove the table from metadata
@@ -296,20 +296,3 @@ def generate_key(item: Auth,request: Request):
 # for column in columns:
 #     print(f"Name: {column['name']}, Type: {column['type']}, Nullable: {column['nullable']}, Default: {column.get('default')}")
 
-
-# table_to_delete = meta.tables['api_keys']
-# # Remove the table from metadata
-# meta.remove(table_to_delete)
-
-# api_keys = Table(
-#     'api_keys', meta,
-#     Column('api_key',Text, primary_key=True),
-#     Column('name', Text),
-#     Column('email', Text),
-#     Column('time', DateTime),
-#     Column('validity',Integer),
-# )
-
-
-# meta.create_all(engine)
-# conn.commit()
