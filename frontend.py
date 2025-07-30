@@ -163,5 +163,22 @@ if __name__ == "__main__":
 # then your friend can recreate and run your full app — with all dependencies, environment, and setup — just by running that image.
 
 
+
+#  A web API deployed at scale (multiple users, frequent updates) will hit race conditions and lock errors quickly.
+# Concurrent access = Multiple processes or threads attempting to access the DB before the previous operation completes.
+# 	•	Not a client-server database: SQLite is just a file accessed via a library, not a server process. You can’t connect to it over a network like PostgreSQL or MySQL.
+# 	•	No separation of concerns: It runs inside your application process — you can’t run it in a separate container or scale it independently.
+# 	•	Scaling limitation: If you scale your API (e.g. multiple Docker containers), each gets its own copy of the database file — leading to data inconsistency and concurrent write issues.
+# 	•	No true multi-user concurrency: SQLite handles limited concurrent access, making it unsuitable for high-throughput or multi-user production systems.
+
+
+# •	All your DB data lives inside the container’s writable layer, which is ephemeral.
+# •	So if the container stops or is deleted — you lose all your data, including schema and records.
+# therefore you need to use volumes
+# you need to have acess to the actual db and hsot it in a containerized enviroment , otherwise its just the data at the 
+# container layer and you will lose it. 
+
+
+
 # blackscoles
 # ito calculus
