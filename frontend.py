@@ -4,6 +4,7 @@ import openai
 import gradio.themes
 from gradio.themes.base import Base
 from gradio.themes.utils import colors, fonts
+# from api import reduce_content,generate_key
 
 class frontend:
 
@@ -11,46 +12,7 @@ class frontend:
         """Frontend class for handling the UI and backend interaction."""
         self.client = None
 
-    def validate_input(self,input_text,noOfWords,option):
-        """
-        Validate the user's input parameters.
-
-        Args:
-            input_text (str): The input paragraph.
-            noOfWords (int): Desired word count.
-            option (str): Processing mode selected by user.
-
-        Returns:
-            str: Empty string if valid, else an error message.
-        """
-        if not (option):
-            return "Please select an option."
-        if not input_text.strip():
-            return "Input text cannot be empty."
-        if noOfWords > len(input_text.split()):
-            return "Input text needs to be longer than the number of words you want to shorten it to."
-        return ""
-    
-
-    def process_endpoint(self,endpoint):
-        """
-        Set up the OpenAI API client with the given endpoint.
-
-        Args:
-            endpoint (str): OpenAI API key.
-
-        Raises:
-            gr.Error: If the client initialization fails.
-        """
-        try:
-            client = openai.OpenAI(api_key=endpoint)
-            self.client = client
-
-        except Exception as e:
-            raise gr.Error(f"{e}")
-
-
-    def process(self,inputText, noOfWords, option):
+    def process(self,endpoint_ai,endpoint_app,inputText, noOfWords, option,request: gr.Request):
         """
         Process and validate the input text using the selected option via ML class.
 
@@ -62,17 +24,45 @@ class frontend:
         Returns:
             tuple: Processed text and its word count.
         """
+        if request:
+            print("Client IP address:", request.client.host)
 
-        # validate the input
-        validation = self.validate_input(inputText, noOfWords,option)
-        if(validation):
-            raise gr.Error(validation)
-        
-        # Create an instance of the ML class and process the text
-        refined_input_text = " ".join(inputText.split())
-        ml_instance = ML(refined_input_text, noOfWords, option,self.client)
-        processed_text,processed_text_length = ml_instance.process_text()
-        return processed_text,processed_text_length
+        if option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
+            option = 1
+
+        elif option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
+            option = 2
+
+        item = {
+            "llm_api_key": endpoint_ai,
+            "app_key": endpoint_app,
+            "option": option,
+            "input_text": inputText,
+            "no_of_words": noOfWords
+        }
+
+        # output = reduce_content(item)
+        # processed_text = output["processed_text"]
+        # processed_text_length = output["processed_text_length"]
+        # return processed_text,processed_text_length
+    
+
+
+    def generate_api_key(name,email,validity,request: gr.Request):
+
+        if request:
+            print("Request headers:", request.headers)
+            print("Client IP address:", request.client.host)
+
+        item = {
+            "name": name,
+            "email": email,
+            "validity": validity
+        }
+
+        # output = generate_key(item)
+        # api_key = output["api_key"]
+        # return api_key
     
 
     def demo(self):
@@ -92,21 +82,20 @@ class frontend:
             shortening text to fit within a specified word count.
             """)
 
-            endpoint = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...")
-            submit_button_endpoint = gr.Button("Submit Key")
+            endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...")
 
-            submit_button_endpoint.click(
-                fn=self.process_endpoint,
-                inputs=endpoint
-            )
+            endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...")
 
             input = gr.Textbox(label="Input Text", placeholder="Enter your text here...")
+
             number_of_words = gr.Number(label="Number of Words", step=1,minimum=1,value = 1)
+
             option = gr.Radio(["Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)",
                         "Shorten text (choose if you want to slightly shorten text to fix it within a word count)"], 
                         label="Options")
             
             clear_button = gr.ClearButton(components=[input, number_of_words, option])
+
             submit_button_text = gr.Button("Submit")
 
             output_text = gr.Textbox(label="Output Text", placeholder="Your processed text will appear here...")
@@ -114,7 +103,7 @@ class frontend:
 
             submit_button_text.click(
                 fn=self.process,
-                inputs=[input, number_of_words, option],
+                inputs=[endpoint_ai,endpoint_app ,input, number_of_words, option],
                 outputs=[output_text,output_no_of_words]
             )
 
@@ -188,6 +177,8 @@ if __name__ == "__main__":
 # make your application reproducible
 # concentrate your logic in only one place. make systems decoupled
 # get off local, thinkign baout things like latency per user, load testing is really improtnat as u scale your application
+
+# Modular logic ensures initialization only happens when explicitly called — not by accident during import.
 
 # blackscoles
 # ito calculus

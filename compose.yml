@@ -70,6 +70,18 @@ services:
             - ./postgre_db:/var/lib/postgresql/data
             - ./init.sql:/docker-entrypoint-initdb.d/create_tables.sql
 
+        frontend:
+
+          image: frontend_img
+
+          restart: always
+
+          ports:
+            - 3000:3000
+
+          depends_on:
+            api:
+              condition: service_started
 
 # integrating contianer monitoring and handling dependcies 
 # using healthchecks and depends on
