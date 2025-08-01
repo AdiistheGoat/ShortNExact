@@ -41,14 +41,18 @@ docker compose up
 
 ### 2. **Pull the pre-built images from Docker Hub:**
    ```sh
-   docker pull frontend_img
-   docker pull backend_img
+   docker pull adityagoyal333/short_n_exact:frontend_img
+   docker pull adityagoyal333/short_n_exact:api_img
+   ```
+### 3. **Change the tag names of the image**
+   ```sh
+   docker tag adityagoyal333/short_n_exact:frontend_img frontend_img
+   docker tag adityagoyal333/short_n_exact:api_img api_img
    ```
 
 ### 3. **Start all services using Docker Compose:**
    ```sh
    docker compose up
    ```
-
 ---
 
