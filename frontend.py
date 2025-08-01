@@ -11,7 +11,7 @@ class frontend:
         """Frontend class for handling the UI and backend interaction."""
         self.client = None
 
-    def process(self,endpoint_ai,endpoint_app,inputText, noOfWords, option,request: gr.Request):
+    def process(self,endpoint_ai: str,endpoint_app: str,inputText: str, noOfWords: int, option: int,request: gr.Request):
         """
         Process and validate the input text using the selected option via ML class.
 
@@ -55,8 +55,19 @@ class frontend:
     
 
 
-    def generate_api_key(name,email,validity,request: gr.Request):
+    def generate_api_key(name: str,email: str,validity: int,request: gr.Request):
+        """
+        Generate a new API key by sending user details to a backend API.
 
+        Parameters:
+        - name (str): Name of the user requesting the key.
+        - email (str): Email of the user.
+        - validity (int): Duration (in days) for which the key is valid.
+        - request (gr.Request): Gradio request object containing client metadata like IP address.
+
+        Returns:
+        - str: The generated API key, or an error message (duplicated across 2 outputs if needed).
+        """
         if request:
             print("Client IP address:", request.client.host)
 
@@ -121,7 +132,7 @@ class frontend:
                 outputs=[output_text,output_no_of_words]
             )
 
-        demo.launch(server_name="0.0.0.0", server_port=3000,show_error=True)
+        demo.launch(server_name="0.0.0.0", server_port=3000)
 
 if __name__ == "__main__":
     print("Starting demo")
