@@ -1,10 +1,9 @@
 import gradio as gr
-from ml_layer import ML
 import openai
 import gradio.themes
 from gradio.themes.base import Base
 from gradio.themes.utils import colors, fonts
-# from api import reduce_content,generate_key
+import requests
 
 class frontend:
 
@@ -40,18 +39,25 @@ class frontend:
             "input_text": inputText,
             "no_of_words": noOfWords
         }
+    
+        output = requests.get(
+                "http://api:7860/",
+                json = item,
+                headers={"ip_address": request.client.host},
+        )
 
-        # output = reduce_content(item)
-        # processed_text = output["processed_text"]
-        # processed_text_length = output["processed_text_length"]
-        # return processed_text,processed_text_length
+        output = output.json()
+        if("error" in output):
+            return output["error"],output["error"]
+        processed_text = output["processed_text"]
+        processed_text_length = output["processed_text_length"]
+        return processed_text,processed_text_length
     
 
 
     def generate_api_key(name,email,validity,request: gr.Request):
 
         if request:
-            print("Request headers:", request.headers)
             print("Client IP address:", request.client.host)
 
         item = {
@@ -60,9 +66,17 @@ class frontend:
             "validity": validity
         }
 
-        # output = generate_key(item)
-        # api_key = output["api_key"]
-        # return api_key
+        output = requests.get(
+                "http://api:7860/api_key",
+                json=item,
+                headers={"ip_address": request.client.host}
+        )
+        
+        output = output.json()
+        if("error" in output):
+            return output["error"],output["error"]
+        api_key = output["api_key"]
+        return api_key
     
 
     def demo(self):
@@ -107,10 +121,10 @@ class frontend:
                 outputs=[output_text,output_no_of_words]
             )
 
-
-        demo.launch()
+        demo.launch(server_name="0.0.0.0", server_port=3000,show_error=True)
 
 if __name__ == "__main__":
+    print("Starting demo")
     frontend_instance = frontend()
     frontend_instance.demo()
 
