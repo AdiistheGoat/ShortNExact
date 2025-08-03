@@ -39,18 +39,69 @@ class ML:
 
         Returns:
             Tuple[str, int]: A tuple of processed text and the number of words in the final output.
+            
+        Raises:
+            ValueError: If input validation fails
+            RuntimeError: If processing fails due to API or internal errors
         """
-        input_text = self.fix_syntax_and_grammar(self.input_text)
-        print(input_text)
+        try:
+            # Input validation
+            if not self.input_text or not self.input_text.strip():
+                raise ValueError("Input text cannot be empty")
+            
+            if self.number_of_words <= 0:
+                raise ValueError("Target word count must be greater than 0")
+            
+            if not self.client:
+                raise RuntimeError("OpenAI client is not initialized")
+            
+            if not self.option:
+                raise ValueError("Processing option must be specified")
+            
+            # Grammar correction with error handling
+            try:
+                input_text = self.fix_syntax_and_grammar(self.input_text)
+                print(input_text)
+            except Exception as e:
+                print(f"Warning: Grammar correction failed: {e}")
+                # Continue with original text if grammar correction fails
+                input_text = self.input_text
+            
+            # Validate processed input
+            if not input_text or not input_text.strip():
+                raise RuntimeError("Text processing resulted in empty content")
 
-        # Placeholder for text processing logic
-        if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
-            processed_text = self.process_concisely(input_text)
-            return processed_text, self.count_words(processed_text)
+            # Route to appropriate processing method
+            if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
+                try:
+                    processed_text = self.process_concisely(input_text)
+                    if not processed_text or not processed_text.strip():
+                        raise RuntimeError("Concise processing failed - no output generated")
+                    return processed_text, self.count_words(processed_text)
+                except Exception as e:
+                    raise RuntimeError(f"Concise processing failed: {str(e)}")
 
-        elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
-            processed_text = self.process_short(input_text)
-            return processed_text, self.count_words(processed_text)
+            elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
+                try:
+                    processed_text = self.process_short(input_text)
+                    if not processed_text or not processed_text.strip():
+                        raise RuntimeError("Text shortening failed - no output generated")
+                    return processed_text, self.count_words(processed_text)
+                except Exception as e:
+                    raise RuntimeError(f"Text shortening failed: {str(e)}")
+            
+            else:
+                raise ValueError(f"Invalid processing option: {self.option}")
+                
+        except ValueError as e:
+            print(f"Validation Error: {e}")
+            raise
+        except RuntimeError as e:
+            print(f"Processing Error: {e}")
+            raise
+        except Exception as e:
+            print(f"Unexpected Error: {e}")
+            raise RuntimeError(f"Text processing failed unexpectedly: {str(e)}")
 
 
     def fix_syntax_and_grammar(self,input_text):
