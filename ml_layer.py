@@ -464,7 +464,7 @@ class ML:
         )
 
         curr_text = input_text.strip()
-        curr_no_of_words = len(curr_text.split())
+        curr_no_of_words = self.count_words(curr_text)
         optimized_lines = sent_tokenize(curr_text)
 
         for i in range(len(optimized_lines)):
@@ -514,17 +514,17 @@ class ML:
 
             curr_text = ". ".join(optimized_lines).strip()
 
-            if( len(curr_text.split() - curr_no_of_words ) < 1):
+            if( self.count_words(curr_text) - curr_no_of_words ) < 1:
                 count += 1
             else:
                 count = max(0,count-1)
 
-            curr_no_of_words = len(curr_text.split())
+            curr_no_of_words = self.count_words(curr_text)
             print(f"Current word count: {curr_no_of_words}, Words to increase: {to_increase}")
 
 
         final_text = ". ".join(optimized_lines).strip()
-        print(f"length of Final text after increasing: {len(final_text.split())}")
+        print(f"length of Final text after increasing: {self.count_words(final_text)}")
         return final_text
         
 
