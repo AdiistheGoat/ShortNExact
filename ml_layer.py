@@ -3,6 +3,12 @@ import re
 import nltk
 nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
+from collections import defaultdict
+
+#ToDo
+# what if we give how many times that tool has been called already repvisouly consecutively
+# and then gice the description that if calling that tool is not working, try calling another tool
+
 
 class ML: 
 
@@ -20,6 +26,105 @@ class ML:
         self.number_of_words = number_of_words
         self.option = option    
         self.client = client
+
+    def llm_orchestrator(self,input_text):
+
+        curr_input_text = input_text
+        word_count_goal = self.number_of_words
+        curr_count = self.count_words(input_text)
+
+
+        tools = [
+
+        {
+            "type": "function",
+            "name": "process_concisely",
+            "description": "Use this tool when the user wants to restructure and condense large blocks of text into a concise form while preserving key ideas. Best for aggressive"
+            "length reduction."
+        },
+
+        {
+            "type": "function",
+            "name": "process_short",
+            "description": "Use this tool to reduce word count while keeping sentence structure and paragraph flow unchanged. Preferred when the content "
+            "is slightly over the word budget. "
+        },
+
+        {
+            "type": "function",
+            "name": "increase_words",
+            "description": "Use this to gently expand a response that just slightly falls short of the word limit by enriching examples or using more expressive language."
+            "and meaning should remain unchanged."
+        },
+
+        {
+            "type": "function",
+            "name": "decrease_words",
+            "description": "Use this to shave off extra words from a response that just slightly goes over the word limit, focusing on cutting modifiers or redundant examples.",
+        }
+        ]
+
+
+        system_prompt_segment = """
+            You are an intelligent rewriting assistant tasked with reducing a block of text to a specified target word count. 
+            You must select and call the most appropriate tools from the available list to meet the word count goal. 
+
+            If the same tool has been called multiple times already, select the next best tool.
+
+            You are given-:
+            1) Current word count of the text 
+            2) Goal word count
+            3) History of tools called 
+        """
+
+        current_tool = None
+        frequency_tool = 0
+        dic_history = defaultdict(int)
+        while(curr_count!=word_count_goal):
+
+            message = f"""
+               Current word count: {curr_count}
+               Goal word count: {word_count_goal }
+               History of tools called: {dic_history}
+            """
+
+            response = self.client.responses.create(
+                model="gpt-4.1",
+                input = message,
+                top_p=0.3,
+                instructions=system_prompt_segment,
+                tools = tools
+            )
+
+            tool_call = response.output[0]
+            function_str = str(tool_call.name)
+
+            dic_history[function_str] += 1
+
+            print(f"Calling {function_str}")
+
+            curr_input_text = self.call_function(function_str,curr_input_text)
+            if(self.count_words(curr_input_text)>curr_count):
+                raise Exception("Unable to get it to the exact word count")
+            curr_count = self.count_words(curr_input_text)
+
+        return curr_input_text
+        
+        
+
+    def call_function(self,function_name,input_text):
+        if(function_name=="process_concisely"):
+            return self.process_concisely(input_text)
+
+        elif(function_name=="process_short"):
+            return self.process_short(input_text)
+
+        elif(function_name=="increase_words"):
+            return self.increase_words(input_text)
+
+        elif(function_name=="decrease_words")  :
+            return self.decrease_words(input_text)
+
 
 
     def count_words(self,text):
@@ -41,16 +146,18 @@ class ML:
             Tuple[str, int]: A tuple of processed text and the number of words in the final output.
         """
         input_text = self.fix_syntax_and_grammar(self.input_text)
-        print(input_text)
+
+        processed_text = self.llm_orchestrator(input_text)
+        return processed_text, self.count_words(processed_text)
 
         # Placeholder for text processing logic
-        if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
-            processed_text = self.process_concisely(input_text)
-            return processed_text, self.count_words(processed_text)
+        # if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
+        #     processed_text = self.process_concisely(input_text)
+        #     return processed_text, self.count_words(processed_text)
 
-        elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
-            processed_text = self.process_short(input_text)
-            return processed_text, self.count_words(processed_text)
+        # elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
+        #     processed_text = self.process_short(input_text)
+        #     return processed_text, self.count_words(processed_text)
 
 
     def fix_syntax_and_grammar(self,input_text):
@@ -105,6 +212,7 @@ class ML:
             "Each chunk should focus on a distinct concept or thought.\n"
             "Separate each chunk with: <CHUNK_END>\n"
             "**Do not summarize, rephrase, or alter the content — only seprate the given text into different parts.****"
+            "Pls dont chnage the word count of the text. Just divide the text into different parts"
         )
 
         segment_response = self.client.responses.create(
@@ -155,7 +263,7 @@ class ML:
             system_prompt_concise = f"""
                 You are a concise and intelligent editor.
 
-                Your task is to take a given paragraph and reduce its length by at least {to_reduce_percentage*100}% while preserving all core ideas, meaning, and tone.
+                Your task is to take a given paragraph and reduce its length by at least { (to_reduce_percentage*100) + 10}% while preserving all core ideas, meaning, and tone.
 
                 Guidelines:
                 - Eliminate redundant words, repetitive phrasing, and filler language.
@@ -166,7 +274,7 @@ class ML:
                 - Use natural, human-like language — not robotic or overly compressed.
                 - Remove lines only if they do not contribute to the core meaning and are outliers. 
                 - If the word count is not yet met, start removing lines that are not the most essential 
-                **ensure to make progress towards reducing the word count by at least {to_reduce_percentage*100}%***
+                **ensure to make progress towards reducing the word count by at least {(to_reduce_percentage*100) + 10}%***
 
                 Return ONLY the revised **shortened paragraph**. Do not explain anything.
             """
