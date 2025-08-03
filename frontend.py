@@ -107,9 +107,9 @@ class frontend:
             shortening text to fit within a specified word count.
             """)
 
-            endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...")
+            endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...", type="password")
 
-            endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...")
+            endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...", type="password")
 
             input = gr.Textbox(label="Input Text", placeholder="Enter your text here...")
 
