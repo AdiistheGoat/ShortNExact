@@ -205,5 +205,11 @@ if __name__ == "__main__":
 
 # Modular logic ensures initialization only happens when explicitly called — not by accident during import.
 
+
+# A Worker Service is a long-running background service designed for tasks that do not
+# require direct user interaction. It is ideal for scenarios where actions need to be
+# performed continuously, at intervals, or in response to events, such as listening to
+# message queues, processing data, or scheduling tasks.
+    
 # blackscoles
 # ito calculus
