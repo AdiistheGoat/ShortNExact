@@ -3,13 +3,6 @@ FROM python:3.13.3
 WORKDIR /app
 COPY frontend.py /app
 COPY requirements.txt /app
-
-# to not ensure stale view 
-RUN apt-get update 
-
-#for health check ups in docker compose
-RUN apt-get --yes install curl
-
 RUN pip3 install -r requirements.txt
 EXPOSE 3000
 CMD ["python3", "frontend.py"]

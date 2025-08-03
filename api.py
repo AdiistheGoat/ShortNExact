@@ -167,21 +167,6 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
         return {"error": "Rate Limit Exceeded"}
 
 
-"""
-Health check endpoint for the API.
-
-Args:
-    request (Request): FastAPI request object.
-
-Returns:
-    dict: A simple status message indicating the API is healthy.
-"""
-@app.get("/healthy")
-def reduce_content(request: Request):
-    return {"status": "healthy"}
-
-
-
 @app.get("/")
 def reduce_content(item: Item,request: Request):
     """

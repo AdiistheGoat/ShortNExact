@@ -2,27 +2,16 @@ name: short_and_exact
 
 services:
         api:
-              image: api_img:latest
-
+              image: api_img
               deploy:
                 resources:
                   limits:
                     memory: 3g
-
-              healthcheck:
-                test: ["CMD", "curl", "-f", "http://localhost:7860/healthy"]
-                interval: 60s
-                timeout: 3s
-                retries: 3
-                start_period: 10s
-
               depends_on:
                 db:
                   condition: service_healthy
                 redis:
                   condition: service_healthy
-
-
               ports:
                 - "8000:7860"              
 # the port 7860 has specfied to be already expose ...we are specify it to be exposed to the 8000 port of the local computer.
@@ -31,7 +20,7 @@ services:
 
         redis:
               image: redis:6.2-alpine   # smaller version of redis
-              # restart: always   # Ensures the container restarts automatically if it crashes
+              restart: always   # Ensures the container restarts automatically if it crashes
               deploy:
                 resources:
                   limits:
@@ -39,10 +28,10 @@ services:
 
               healthcheck:
                 test: ["CMD", "redis-cli", "ping"]
-                interval: 60s
+                interval: 30s
                 timeout: 3s
                 retries: 3
-                start_period: 10s
+                start_period: 20s
 
               ports:
                 - "6379:6379"
@@ -55,7 +44,7 @@ services:
         db:
           image: postgres  # latest stable image of postgres SQL
 
-          # restart: always # Ensures the container restarts automatically if it crashes
+          restart: always # Ensures the container restarts automatically if it crashes
 
           environment:
             POSTGRES_DB: "short_and_exact" # Sets the default database name
@@ -68,11 +57,11 @@ services:
                 memory: 3g
 
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready" ,"-h" ,"postgres" ,"-p" ,"5432" ,"-U" ,"Aditya Goyal" ,"-d" ,"short_and_exact"]
-            interval: 60s
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 30s
             timeout: 3s
             retries: 3
-            start_period: 10s
+            start_period: 30s
             
           ports:
             - 5432:5432
@@ -83,30 +72,16 @@ services:
 
         frontend:
 
-          image: frontend_img:latest
+          image: frontend_img
 
-          # restart: always
+          restart: always
 
-          healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:3000"]
-            interval: 60s
-            timeout: 3s
-            retries: 3
-            start_period: 10s
-            
           ports:
             - 3000:3000
 
           depends_on:
             api:
-              condition: service_healthy
+              condition: service_started
 
 # integrating contianer monitoring and handling dependcies 
 # using healthchecks and depends on
-
-
-# The HEALTHCHECK instruction in a Dockerfile or the healthcheck configuration in Docker Compose defines a 
-# command or script that Docker will execute within the running container. This command is designed to verify 
-# the health and responsiveness of the application or service running inside that specific container.
-
-# Docker does not automatically stop dependent containers if a healthcheck fails later after startup
