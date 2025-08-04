@@ -5,9 +5,6 @@ nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
 from collections import defaultdict
 
-#ToDo
-# what if we give how many times that tool has been called already repvisouly consecutively
-# and then gice the description that if calling that tool is not working, try calling another tool
 
 
 class ML: 
@@ -27,8 +24,21 @@ class ML:
         self.option = option    
         self.client = client
 
-    def llm_orchestrator(self,input_text):
 
+
+    def llm_orchestrator(self,input_text):
+        """
+        Iteratively reduces or adjusts the word count of input text to match the desired target using LLM-guided tool invocation.
+
+        The function uses a loop where an LLM selects the most appropriate rewriting tool (e.g., concise rewriting, shortening, word expansion)
+        based on the current and target word counts, as well as tool call history. It continues calling tools until the word goal is met.
+
+        Args:
+            input_text (str): Original text input provided by the user.
+
+        Returns:
+            str: Final rewritten version of the text adjusted to the desired word count.
+        """
         curr_input_text = input_text
         word_count_goal = self.number_of_words
         curr_count = self.count_words(input_text)
@@ -69,7 +79,9 @@ class ML:
             You are an intelligent rewriting assistant tasked with reducing a block of text to a specified target word count. 
             You must select and call the most appropriate tools from the available list to meet the word count goal. 
 
-            If the same tool has been called multiple times already, select the next best tool.
+            If the same tool has been called multiple times already 
+            -select the next best tool.
+            -sometimes selecting tools that doesnt make sense get you to the right path
 
             You are given-:
             1) Current word count of the text 
@@ -77,8 +89,6 @@ class ML:
             3) History of tools called 
         """
 
-        current_tool = None
-        frequency_tool = 0
         dic_history = defaultdict(int)
         while(curr_count!=word_count_goal):
 
@@ -104,15 +114,29 @@ class ML:
             print(f"Calling {function_str}")
 
             curr_input_text = self.call_function(function_str,curr_input_text)
-            if(self.count_words(curr_input_text)>curr_count):
-                raise Exception("Unable to get it to the exact word count")
             curr_count = self.count_words(curr_input_text)
+
+            liste = [True if dic_history[i]>3 else False for i in dic_history ]
+            if True in liste:
+                return "Current iteration failed!"
+
 
         return curr_input_text
         
         
 
     def call_function(self,function_name,input_text):
+        """
+        Dynamically calls the appropriate text rewriting function based on the function name.
+
+        Args:
+            function_name (str): Name of the function to invoke. Must be one of:
+                                'process_concisely', 'process_short', 'increase_words', 'decrease_words'.
+            input_text (str): The text to process using the selected function.
+
+        Returns:
+            str: The transformed text after applying the specified function.
+        """
         if(function_name=="process_concisely"):
             return self.process_concisely(input_text)
 
@@ -128,36 +152,38 @@ class ML:
 
 
     def count_words(self,text):
-        # Match words, abbreviations, hyphenated terms, numbers, etc.
+        """
+        Counts the number of words in a given text.
+
+        Args:
+            text (str): The input string to analyze.
+
+        Returns:
+            int: Total number of words detected, including abbreviations, hyphenated words, and numbers.
+        """
         pattern = r"\b(?:\w+(?:[-.']\w+)*)\b"
         matches = re.findall(pattern, text)
         return len(matches)
 
     def process_text(self):
         """
-        Main entry point to process the input text based on the specified option.
+        Main entry point for processing the input text to match a target word count while preserving meaning and readability.
 
-        First, it performs grammar and punctuation correction on the input text.
-        Then it either:
-            - Concisely rephrases it while maintaining ideas (if option is 'concisely present ideas'), or
-            - Slightly shortens it to fit within a word limit (if option is 'shorten text').
+        This method first performs grammar and punctuation correction on the raw input text.
+        It then delegates rewriting to an LLM-based orchestrator, which dynamically selects the most suitable rewriting tools
+        (e.g., concise rewriting, shortening, word expansion) to reach the desired word count.
 
         Returns:
-            Tuple[str, int]: A tuple of processed text and the number of words in the final output.
+            Tuple[str, int]: A tuple containing the rewritten text and its final word count.
         """
         input_text = self.fix_syntax_and_grammar(self.input_text)
 
-        processed_text = self.llm_orchestrator(input_text)
+        while(True):
+            processed_text = self.llm_orchestrator(input_text)
+            if(processed_text != "Current iteration failed!"):
+                break
+
         return processed_text, self.count_words(processed_text)
-
-        # Placeholder for text processing logic
-        # if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
-        #     processed_text = self.process_concisely(input_text)
-        #     return processed_text, self.count_words(processed_text)
-
-        # elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
-        #     processed_text = self.process_short(input_text)
-        #     return processed_text, self.count_words(processed_text)
 
 
     def fix_syntax_and_grammar(self,input_text):
