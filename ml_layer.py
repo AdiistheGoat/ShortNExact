@@ -3,6 +3,9 @@ import re
 import nltk
 nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
+from collections import defaultdict
+
+
 
 class ML: 
 
@@ -22,35 +25,165 @@ class ML:
         self.client = client
 
 
+
+    def llm_orchestrator(self,input_text):
+        """
+        Iteratively reduces or adjusts the word count of input text to match the desired target using LLM-guided tool invocation.
+
+        The function uses a loop where an LLM selects the most appropriate rewriting tool (e.g., concise rewriting, shortening, word expansion)
+        based on the current and target word counts, as well as tool call history. It continues calling tools until the word goal is met.
+
+        Args:
+            input_text (str): Original text input provided by the user.
+
+        Returns:
+            str: Final rewritten version of the text adjusted to the desired word count.
+        """
+        curr_input_text = input_text
+        word_count_goal = self.number_of_words
+        curr_count = self.count_words(input_text)
+
+
+        tools = [
+
+        {
+            "type": "function",
+            "name": "process_concisely",
+            "description": "Use this tool when the user wants to restructure and condense large blocks of text into a concise form while preserving key ideas. Best for aggressive"
+            "length reduction."
+        },
+
+        {
+            "type": "function",
+            "name": "process_short",
+            "description": "Use this tool to reduce word count while keeping sentence structure and paragraph flow unchanged. Preferred when the content "
+            "is slightly over the word budget. "
+        },
+
+        {
+            "type": "function",
+            "name": "increase_words",
+            "description": "Use this to gently expand a response that just slightly falls short of the word limit by enriching examples or using more expressive language."
+            "and meaning should remain unchanged."
+        },
+
+        {
+            "type": "function",
+            "name": "decrease_words",
+            "description": "Use this to shave off extra words from a response that just slightly goes over the word limit, focusing on cutting modifiers or redundant examples.",
+        }
+        ]
+
+
+        system_prompt_segment = """
+            You are an intelligent rewriting assistant tasked with reducing a block of text to a specified target word count. 
+            You must select and call the most appropriate tools from the available list to meet the word count goal. 
+
+            If the same tool has been called multiple times already 
+            -select the next best tool.
+            -sometimes selecting tools that doesnt make sense get you to the right path
+
+            You are given-:
+            1) Current word count of the text 
+            2) Goal word count
+            3) History of tools called 
+        """
+
+        dic_history = defaultdict(int)
+        while(curr_count!=word_count_goal):
+
+            message = f"""
+               Current word count: {curr_count}
+               Goal word count: {word_count_goal }
+               History of tools called: {dic_history}
+            """
+
+            response = self.client.responses.create(
+                model="gpt-4.1",
+                input = message,
+                top_p=0.3,
+                instructions=system_prompt_segment,
+                tools = tools
+            )
+
+            tool_call = response.output[0]
+            function_str = str(tool_call.name)
+
+            dic_history[function_str] += 1
+
+            print(f"Calling {function_str}")
+
+            curr_input_text = self.call_function(function_str,curr_input_text)
+            curr_count = self.count_words(curr_input_text)
+
+            liste = [True if dic_history[i]>3 else False for i in dic_history ]
+            if True in liste:
+                return "Current iteration failed!"
+
+
+        return curr_input_text
+        
+        
+
+    def call_function(self,function_name,input_text):
+        """
+        Dynamically calls the appropriate text rewriting function based on the function name.
+
+        Args:
+            function_name (str): Name of the function to invoke. Must be one of:
+                                'process_concisely', 'process_short', 'increase_words', 'decrease_words'.
+            input_text (str): The text to process using the selected function.
+
+        Returns:
+            str: The transformed text after applying the specified function.
+        """
+        if(function_name=="process_concisely"):
+            return self.process_concisely(input_text)
+
+        elif(function_name=="process_short"):
+            return self.process_short(input_text)
+
+        elif(function_name=="increase_words"):
+            return self.increase_words(input_text)
+
+        elif(function_name=="decrease_words")  :
+            return self.decrease_words(input_text)
+
+
+
     def count_words(self,text):
-        # Match words, abbreviations, hyphenated terms, numbers, etc.
+        """
+        Counts the number of words in a given text.
+
+        Args:
+            text (str): The input string to analyze.
+
+        Returns:
+            int: Total number of words detected, including abbreviations, hyphenated words, and numbers.
+        """
         pattern = r"\b(?:\w+(?:[-.']\w+)*)\b"
         matches = re.findall(pattern, text)
         return len(matches)
 
     def process_text(self):
         """
-        Main entry point to process the input text based on the specified option.
+        Main entry point for processing the input text to match a target word count while preserving meaning and readability.
 
-        First, it performs grammar and punctuation correction on the input text.
-        Then it either:
-            - Concisely rephrases it while maintaining ideas (if option is 'concisely present ideas'), or
-            - Slightly shortens it to fit within a word limit (if option is 'shorten text').
+        This method first performs grammar and punctuation correction on the raw input text.
+        It then delegates rewriting to an LLM-based orchestrator, which dynamically selects the most suitable rewriting tools
+        (e.g., concise rewriting, shortening, word expansion) to reach the desired word count.
 
         Returns:
-            Tuple[str, int]: A tuple of processed text and the number of words in the final output.
+            Tuple[str, int]: A tuple containing the rewritten text and its final word count.
         """
         input_text = self.fix_syntax_and_grammar(self.input_text)
-        print(input_text)
 
-        # Placeholder for text processing logic
-        if self.option == "Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)":
-            processed_text = self.process_concisely(input_text)
-            return processed_text, self.count_words(processed_text)
+        while(True):
+            processed_text = self.llm_orchestrator(input_text)
+            if(processed_text != "Current iteration failed!"):
+                break
 
-        elif self.option == "Shorten text (choose if you want to slightly shorten text to fix it within a word count)":
-            processed_text = self.process_short(input_text)
-            return processed_text, self.count_words(processed_text)
+        return processed_text, self.count_words(processed_text)
 
 
     def fix_syntax_and_grammar(self,input_text):
@@ -105,6 +238,7 @@ class ML:
             "Each chunk should focus on a distinct concept or thought.\n"
             "Separate each chunk with: <CHUNK_END>\n"
             "**Do not summarize, rephrase, or alter the content — only seprate the given text into different parts.****"
+            "Pls dont chnage the word count of the text. Just divide the text into different parts"
         )
 
         segment_response = self.client.responses.create(
@@ -155,7 +289,7 @@ class ML:
             system_prompt_concise = f"""
                 You are a concise and intelligent editor.
 
-                Your task is to take a given paragraph and reduce its length by at least {to_reduce_percentage*100}% while preserving all core ideas, meaning, and tone.
+                Your task is to take a given paragraph and reduce its length by at least { (to_reduce_percentage*100) + 10}% while preserving all core ideas, meaning, and tone.
 
                 Guidelines:
                 - Eliminate redundant words, repetitive phrasing, and filler language.
@@ -166,7 +300,7 @@ class ML:
                 - Use natural, human-like language — not robotic or overly compressed.
                 - Remove lines only if they do not contribute to the core meaning and are outliers. 
                 - If the word count is not yet met, start removing lines that are not the most essential 
-                **ensure to make progress towards reducing the word count by at least {to_reduce_percentage*100}%***
+                **ensure to make progress towards reducing the word count by at least {(to_reduce_percentage*100) + 10}%***
 
                 Return ONLY the revised **shortened paragraph**. Do not explain anything.
             """
@@ -356,7 +490,7 @@ class ML:
         )
 
         curr_text = input_text.strip()
-        curr_no_of_words = len(curr_text.split())
+        curr_no_of_words = self.count_words(curr_text)
         optimized_lines = sent_tokenize(curr_text)
 
         for i in range(len(optimized_lines)):
@@ -406,17 +540,17 @@ class ML:
 
             curr_text = ". ".join(optimized_lines).strip()
 
-            if( len(curr_text.split() - curr_no_of_words ) < 1):
+            if( self.count_words(curr_text) - curr_no_of_words ) < 1:
                 count += 1
             else:
                 count = max(0,count-1)
 
-            curr_no_of_words = len(curr_text.split())
+            curr_no_of_words = self.count_words(curr_text)
             print(f"Current word count: {curr_no_of_words}, Words to increase: {to_increase}")
 
 
         final_text = ". ".join(optimized_lines).strip()
-        print(f"length of Final text after increasing: {len(final_text.split())}")
+        print(f"length of Final text after increasing: {self.count_words(final_text)}")
         return final_text
         
 
