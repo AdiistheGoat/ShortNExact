@@ -137,8 +137,6 @@ def validate_input(option:int, input_text:str, no_of_words:int):
 
 
 def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
-    print(WINDOW_SIZE)
-    print(RATE_LIMIT)
     """
     Enforces rate limiting using a sliding window algorithm via Redis.
 
@@ -152,20 +150,28 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
     key = f"{ip}"
     now = time.time()
 
-    r.rpush(key, now)  # Add current timestamp
-    r.expire(key, WINDOW_SIZE)  # Auto-expire key after window
+    print(f"ip : {ip}")
+    print(f"current time: {now}")
 
     # Remove timestamps outside the sliding window
     timestamps = r.lrange(key, 0, -1)
     valid_timestamps = [float(ts) for ts in timestamps if now - float(ts) <= WINDOW_SIZE]
+    print(f"Prev timestamps: {valid_timestamps}")
 
+    if len(valid_timestamps) == RATE_LIMIT:
+        print("expcetion raised")
+        raise Exception("Rate limit exceeded")
+
+    r.delete(key)
     for ts in valid_timestamps:
         r.rpush(key, ts)
-    r.expire(key, WINDOW_SIZE)
 
-    if len(valid_timestamps) > RATE_LIMIT:
-        return {"error": "Rate Limit Exceeded"}
+    r.rpush(key, now)  # Add current timestamp
 
+    timestamps = r.lrange(key, 0, -1)
+    print(f"Final timestamps: {timestamps}")
+
+    r.expire(key, WINDOW_SIZE)  # Auto-expire key after window
 
 """
 Health check endpoint for the API.
@@ -195,9 +201,13 @@ def reduce_content(item: Item,request: Request):
         dict: Processed text and word count, or error message.
     """
 
-    # RATE_LIMIT = 100
-    # WINDOW_SIZE = 60
-    # rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
+    RATE_LIMIT = 2
+    WINDOW_SIZE = 60
+
+    try:
+        rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
+    except Exception as e:
+        return {"error": e.args}
 
     llm_api_key = item.llm_api_key
     option = item.option
@@ -258,9 +268,13 @@ def generate_key(item: Auth,request: Request):
         dict: A dictionary containing either the generated API key or an error message.
     """
 
-    # RATE_LIMIT = 1
-    # WINDOW_SIZE = 60
-    # rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
+    RATE_LIMIT = 5
+    WINDOW_SIZE = 60
+
+    try:
+        rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
+    except Exception as e:
+        return {"error_msg": e.args}
 
     name = item.name.strip()
     email = item.email.strip()
