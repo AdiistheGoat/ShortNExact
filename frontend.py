@@ -41,7 +41,7 @@ class frontend:
         }
     
         output = requests.get(
-                "http://api:7860/",
+                "http://lb:4000/",
                 json = item,
                 headers={"ip_address": request.client.host},
         )
@@ -78,10 +78,11 @@ class frontend:
         }
 
         output = requests.get(
-                "http://api:7860/api_key",
+                "http://lb:4000/api_key",
                 json=item,
-                headers={"ip_address": request.client.host}
+                headers={"X-Forwarded-For": request.client.host}
         )
+        # switched to using the standard XFF header since its supported in many stacks including haproxy
         
         output = output.json()
         if("error" in output):
