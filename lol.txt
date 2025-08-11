@@ -77,11 +77,6 @@ TCP connection
 •	If changes are in different lines or different files → Git applies both automatically.
 
 
-•	When you publish a port (-p 4000:4000 in docker run or ports: in docker-compose), Docker sets up NAT (network address translation) between your host and the container.
-•	That NAT changes the packet’s source IP from your actual host IP to the host’s Docker bridge gateway IP before it reaches the container.
-•	From the container’s perspective, the “client” is the bridge gateway — not your public/LAN IP.
-
-
 # its good practise to have the requirements seprate for every container. 
 # How do we ensure that given a conda env and then the docker containers.
 # How do we keep a track seprately and efficiently
