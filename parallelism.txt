@@ -29,6 +29,12 @@ spinning up threads in a process, spinning up unique processes with their own me
 They can, but only if you share mutable state across threads and coordinate it poorly. If you don’t share (or only pass data in/out), you won’t have races or deadlocks.
 
 
+Think of each request as its own sequential pipeline (A → B → C). With async, the single event loop 
+interleaves many pipelines at their await points, so while one request is waiting on I/O, the loop runs another request’s step.
+
+in a web API framework like FastAPI/Starlette, the ASGI server (uvicorn, hypercorn, etc.) is doing the “asyncio.gather dance” for you under the hood.
+
+
 
 
 

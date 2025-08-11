@@ -1,6 +1,6 @@
 # Import necessary modules and libraries
 from ml_layer import ML
-from fastapi import FastAPI,Depends,HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 import openai
 import redis
@@ -183,7 +183,7 @@ Returns:
     dict: A simple status message indicating the API is healthy.
 """
 @app.get("/healthy")
-def reduce_content(request: Request):
+def health_check(request: Request):
     return {"status": "healthy"}
 
 
