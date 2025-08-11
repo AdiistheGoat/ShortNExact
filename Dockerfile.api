@@ -3,7 +3,7 @@ FROM python:3.13.3
 WORKDIR /app
 COPY api.py /app
 COPY ml_layer.py /app
-COPY api_frontend_requirements.txt /app
+COPY api_requirements.txt /app
 
 # to not ensure stale view 
 RUN apt-get update 
@@ -11,6 +11,6 @@ RUN apt-get update
 #for health check ups in docker compose
 RUN apt-get --yes install curl  
 
-RUN pip3 install -r api_frontend_requirements.txt
+RUN pip3 install -r api_requirements.txt
 EXPOSE 7860
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]

@@ -1,6 +1,4 @@
 import gradio as gr
-import openai
-import gradio.themes
 from gradio.themes.base import Base
 from gradio.themes.utils import colors, fonts
 import requests

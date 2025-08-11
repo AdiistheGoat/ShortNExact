@@ -1,0 +1,36 @@
+
+https://medium.com/@rico098098/load-testing-with-python-fea13369af43
+https://dev.to/coderatul/threading-vs-asyncio-vs-multiprocessing-10ed?utm_source=chatgpt.com
+https://cgnarendiran.github.io/blog/asyncio-vs-multithreading-vs-multiprocessing/
+
+
+
+syncgronous execution- you are awaitign and blocked even thoguht you are not doing any work 
+
+
+Multihreading vs async 
+
+If you are executing the app on a single hread, you are implementing the code sequentially. youa re waitting for those io operations syncronously. 
+
+so lets spin some other thread to do some other work but since shared emmeory, yiu run into race issues and deadlokcing 
+
+So what u do is intiialise a single thread and when it sends some io request, and it tells the io driver to call it back once the repsonse is ready to be recieved
+What this does is prevent the thread from waiting and do the operation in async. This gives it time to execute some other 
+code. - non-blocking asnc thread
+At the same time there are tasks which are actually blockign the event loop for eg cpu operations or io drivers that are not built for async operations
+
+act asycnhornously but look synchronous to you!!! 
+
+
+
+Multiprocessing 
+spinning up threads in a process, spinning up unique processes with their own memory and do interprocess communication using sockets or redis db
+
+They can, but only if you share mutable state across threads and coordinate it poorly. If you don’t share (or only pass data in/out), you won’t have races or deadlocks.
+
+
+
+
+
+
+

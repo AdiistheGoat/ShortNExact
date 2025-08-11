@@ -12,8 +12,6 @@ fastapi==0.116.1
 ffmpy==0.6.1
 filelock==3.18.0
 fsspec==2025.7.0
-gradio==5.38.0
-gradio_client==1.11.0
 groovy==0.1.2
 h11==0.16.0
 hf-xet==1.1.5
