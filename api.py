@@ -146,12 +146,10 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
     Returns:
         dict | None: Error message if limit exceeded, else None.
     """
-    
-    ip =  request.headers.get('X-Forwarded-For', request.remote_addr)
 
+    ip =  request.headers.get('X-Forwarded-For')
     key = f"{ip}"
     now = time.time()
-
     print(f"ip : {ip}")
     print(f"current time: {now}")
 
