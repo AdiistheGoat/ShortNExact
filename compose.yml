@@ -4,10 +4,13 @@ services:
         api:
               image: api_img:latest
 
+              restart: always   # Ensures the container restarts automatically if it crashes
+              
               deploy:
                 resources:
                   limits:
                     memory: 3g
+                replicas: 3
 
               healthcheck:
                 test: ["CMD", "curl", "-f", "http://localhost:7860/healthy"]
@@ -22,16 +25,22 @@ services:
                 redis:
                   condition: service_healthy
 
+              # ports:
+              #   - "8000:7860"   
 
-              ports:
-                - "8000:7860"              
+
+
+
+
 # the port 7860 has specfied to be already expose ...we are specify it to be exposed to the 8000 port of the local computer.
 # Any request recieved by the former will be forwarded to the latter
 # in the api docker image, we have specified that the api runs on port 7860 internally
 
         redis:
               image: redis:6.2-alpine   # smaller version of redis
-              # restart: always   # Ensures the container restarts automatically if it crashes
+
+              restart: always   # Ensures the container restarts automatically if it crashes
+
               deploy:
                 resources:
                   limits:
@@ -44,8 +53,9 @@ services:
                 retries: 3
                 start_period: 10s
 
-              ports:
-                - "6379:6379"
+              # ports:
+              #   - "6379:6379"
+
               command: redis-server --save 10 1 --loglevel warning  # overrirding the command in the redis docker image
               volumes:
                 - ./redis-data:/data
@@ -55,7 +65,7 @@ services:
         db:
           image: postgres  # latest stable image of postgres SQL
 
-          # restart: always # Ensures the container restarts automatically if it crashes
+          restart: always # Ensures the container restarts automatically if it crashes
 
           environment:
             POSTGRES_DB: "short_and_exact" # Sets the default database name
@@ -73,9 +83,10 @@ services:
             timeout: 3s
             retries: 3
             start_period: 10s
+
             
-          ports:
-            - 5432:5432
+          # ports:
+          #   - 5432:5432
 
           volumes:
             - ./postgre_db:/var/lib/postgresql/data
@@ -85,7 +96,7 @@ services:
 
           image: frontend_img:latest
 
-          # restart: always
+          restart: always
 
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:3000"]
@@ -101,12 +112,26 @@ services:
             api:
               condition: service_healthy
 
+        
+        lb:
+
+         image: lb_img:latest
+
+         ports:
+            - 4000:4000
+
+         restart: always  
+
+
+
 # integrating contianer monitoring and handling dependcies 
 # using healthchecks and depends on
-
 
 # The HEALTHCHECK instruction in a Dockerfile or the healthcheck configuration in Docker Compose defines a 
 # command or script that Docker will execute within the running container. This command is designed to verify 
 # the health and responsiveness of the application or service running inside that specific container.
 
 # Docker does not automatically stop dependent containers if a healthcheck fails later after startup
+
+
+# the dependent service won’t fail outright — as long as at least one replica of its dependent is still healthy and reachable
