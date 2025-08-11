@@ -1,6 +1,8 @@
 accelerate==1.9.0
 appnope @ file:///home/conda/feedstock_root/build_artifacts/appnope_1733332318622/work
 asttokens @ file:///home/conda/feedstock_root/build_artifacts/asttokens_1733250440834/work
+async-timeout==5.0.1
+asyncpg==0.30.0
 certifi==2025.7.14
 charset-normalizer==3.4.2
 comm @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_comm_1753453984/work
