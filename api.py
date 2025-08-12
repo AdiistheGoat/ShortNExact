@@ -65,7 +65,7 @@ app = FastAPI()
 r = redis.Redis(host='redis', port=6379, db=0)
 
 # Rate limit config: 100 requests per 60 seconds per IP
-MAX_API_KEYS_LAST_24_HOURS = 100000
+MAX_API_KEYS_LAST_24_HOURS = 10000
 
 # Define request schema for main API functionality
 class Item(BaseModel):
@@ -244,7 +244,7 @@ def health_check(request: Request):
 
 
 @app.get("/")
-def reduce_content(item: Item,request: Request):
+async def reduce_content(item: Item,request: Request):
     """
     API endpoint that processes input text based on selected option.
 
@@ -323,7 +323,7 @@ async def generate_key(item: Auth,request: Request):
         dict: A dictionary containing either the generated API key or an error message.
     """
 
-    RATE_LIMIT = 300
+    RATE_LIMIT = 3000
     WINDOW_SIZE = 60
 
     try:
@@ -352,7 +352,7 @@ async def generate_key(item: Auth,request: Request):
     time7 =  time.perf_counter()
     query = db.insert(app.state.api_keys).values(api_key=api_key,name=name,email=email,time=time_current,validity=validity)
     async with app.state.engine.begin() as conn:
-        output = await conn.execute(query)
+        await conn.execute(query)
         await conn.commit()
     time8 = time.perf_counter()
 
