@@ -10,54 +10,9 @@ from datetime import datetime,timedelta
 from sqlalchemy import create_engine,MetaData,Table, Column,DateTime,Integer,Text,select,text,func, inspect
 import sqlalchemy as db
 import secrets
-import asyncio
 import time
-import anyio
-
 from sqlalchemy.ext.asyncio import create_async_engine
 
-
-# # Establish a connection to the PostgreSQL database
-# try: 
-#     engine = create_engine(url="postgresql://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port, database))
-#     conn = engine.connect()
-# except Exception as e:
-#     print("Connection could not be made due to the following error: \n", e)
-
-# try:
-#     engine = create_async_engine(url="postgresql+asyncpg://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port, database))
-#     conn = engine.begin()
-# except Exception as e:
-#     print("Connection could not be made due to the following error: \n", e)
-
-
-
-# # Create inspector
-# inspector = inspect(engine)
-
-# # Get table names
-# tables = inspector.get_table_names()
-# print("Tables in the database:", tables)
-
-# Reflect existing 'api_keys' table from the database
-# meta = MetaData()
-# api_keys = db.Table('api_keys', meta,autoload_with=engine) #Table object
-# print(meta.tables)
-# api_keys = meta.tables['api_keys']
-
-
-
-# async def async_main():
-#     async with conn: 
-#         api_keys = await conn.run_sync(lambda conn: db.Table('api_keys',meta, autoload_with=conn))
-#     await engine.dispose()
-#     return api_keys
-
-# def get_result():
-#     api_keys = anyio.from_thread.run(async_main())
-#     return api_keys
-
-# api_keys = get_result()
 # Initialize FastAPI application
 app = FastAPI()
 
@@ -271,7 +226,7 @@ async def reduce_content(item: Item,request: Request):
     app_key = item.app_key
 
     query = select(app.state.api_keys).where(app.state.api_keys.c.api_key == app_key)
-    output = app.state.conn.execute(query).fetchall()
+    output = await app.state.conn.execute(query).fetchall()
 
     if(len(output)==0):
         return {"error": "App key authentication failed. Pls use correct key"}
