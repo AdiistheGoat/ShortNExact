@@ -101,13 +101,15 @@ class ML:
                History of tools called: {dic_history}
             """
 
-            response = await self.client.responses.create(
-                model="gpt-4.1",
-                input = message,
-                top_p=0.3,
-                instructions=system_prompt_segment,
-                tools = tools
-            )
+            try:
+                response = await self.client.responses.create(
+                    model="gpt-4.1",
+                    input = message,
+                    top_p=0.3,
+                    instructions=system_prompt_segment,
+                )
+            except Exception as e:
+                return str(e)
 
             tool_call = response.output[0]
             function_str = str(tool_call.name)
@@ -208,12 +210,15 @@ class ML:
             "Return ONLY the revised **gramatically corrected paragraph**. Do not explain anything."
         )
 
-        segment_response = await self.client.responses.create(
-            model="gpt-4.1",
-            input=input_text,
-            top_p=0.3,
-            instructions=system_prompt_segment
-        )
+        try:
+            segment_response = await self.client.responses.create(
+                model="gpt-4.1",
+                input=input_text,
+                top_p=0.3,
+                instructions=system_prompt_segment
+            )
+        except Exception as e:
+            return str(e)
 
         segmented_text = segment_response.output[0].content[0].text.strip()
 
@@ -244,12 +249,15 @@ class ML:
             "Pls dont chnage the word count of the text. Just divide the text into different parts"
         )
 
-        segment_response = await self.client.responses.create(
-            model="gpt-4.1",
-            input=input_text,
-            top_p=0.3,
-            instructions=system_prompt_segment
-        )
+        try:
+            segment_response = await self.client.responses.create(
+                model="gpt-4.1",
+                input=input_text,
+                top_p=0.3,
+                instructions=system_prompt_segment
+            )
+        except Exception as e:
+            return str(e)
 
         segmented_text = segment_response.output[0].content[0].text.strip()
         curr_blobs = [b.strip() for b in segmented_text.split("<CHUNK_END>") if b.strip()]
@@ -309,12 +317,16 @@ class ML:
             """
 
             for index in  range(len(curr_blobs)):
-                refine_response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input=curr_blobs[index],
-                    top_p=0.3,
-                    instructions=system_prompt_concise
-                )
+                try:
+                    refine_response = await self.client.responses.create(
+                        model="gpt-4.1",
+                        input=curr_blobs[index],
+                        top_p=0.3,
+                        instructions=system_prompt_concise
+                    )
+                except Exception as e:
+                    return str(e)
+
                 refined = refine_response.output[0].content[0].text.strip()
                 curr_blobs[index] = refined
 
@@ -407,12 +419,15 @@ class ML:
                     f"Max no words you can reduce: {to_reduce}"
                 )
 
-                response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input = f"{user_input}",
-                    top_p = 0.3,
-                    instructions = system_prompt
-                )
+                try:
+                    response = await self.client.responses.create(
+                        model="gpt-4.1",
+                        input = f"{user_input}",
+                        top_p = 0.3,
+                        instructions = system_prompt
+                    )
+                except Exception as e:
+                    return str(e)
 
                 shortened = response.output[0].content[0].text.strip()
 
@@ -522,12 +537,15 @@ class ML:
                     f"Max no words you can increase: {to_increase}"
                 )
 
-                response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input = f"{user_input}",
-                    top_p = 0.3,
-                    instructions = system_prompt
-                )
+                try:
+                    response = await self.client.responses.create(
+                        model="gpt-4.1",
+                        input = f"{user_input}",
+                        top_p = 0.3,
+                        instructions = system_prompt
+                    )
+                except Exception as e:
+                    return str(e)
 
                 increased = response.output[0].content[0].text.strip()
 
@@ -632,12 +650,15 @@ class ML:
                     f"Max no words you can reduce: {to_reduce}"
                 )
 
-                response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input = f"{user_input}",
-                    top_p = 0.3,
-                    instructions = system_prompt
-                )
+                try:
+                    response = await self.client.responses.create(
+                        model="gpt-4.1",
+                        input = f"{user_input}",
+                        top_p = 0.3,
+                        instructions = system_prompt
+                    )
+                except Exception as e:
+                    return str(e)
 
                 shortened = response.output[0].content[0].text.strip()
 
