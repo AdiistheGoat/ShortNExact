@@ -1,6 +1,4 @@
 import gradio as gr
-import openai
-import gradio.themes
 from gradio.themes.base import Base
 from gradio.themes.utils import colors, fonts
 import requests
@@ -41,7 +39,7 @@ class frontend:
         }
     
         output = requests.get(
-                "http://api:7860/",
+                "http://lb:4000/",
                 json = item,
                 headers={"ip_address": request.client.host},
         )
@@ -78,10 +76,11 @@ class frontend:
         }
 
         output = requests.get(
-                "http://api:7860/api_key",
+                "http://lb:4000/api_key",
                 json=item,
-                headers={"ip_address": request.client.host}
+                headers={"X-Forwarded-For": request.client.host}
         )
+        # switched to using the standard XFF header since its supported in many stacks including haproxy
         
         output = output.json()
         if("error" in output):
@@ -107,9 +106,9 @@ class frontend:
             shortening text to fit within a specified word count.
             """)
 
-            endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...")
+            endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...", type="password")
 
-            endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...")
+            endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...", type="password")
 
             input = gr.Textbox(label="Input Text", placeholder="Enter your text here...")
 
@@ -211,5 +210,29 @@ if __name__ == "__main__":
 # performed continuously, at intervals, or in response to events, such as listening to
 # message queues, processing data, or scheduling tasks.
     
+
+# •	A PR can include multiple commits related to a single feature or fix.
+# •	Create a new branch for every feature or bugfix — even for small changes.
+# •	Always branch off the latest main to ensure you’re working on up-to-date code.
+# •	Keep branches short-lived — delete them after the PR is merged.
+# •	Do not reuse branches across features or fixes to avoid confusion and merge conflicts.
+# •	Before opening a PR, pull the latest changes from main and resolve any conflicts.
+# •	Collaborators work on separate branches, ensuring isolation and easier code reviews.
+# •	Merged branches’ commits remain in main, even after the branch is deleted.
+
+# Git does not discard or overwrite your teammate’s changes from main. Instead, it:
+# 	1.	Replays your commits (from your feature branch) on top of the latest main, which already includes your teammate’s changes.
+# 	2.	If both of you edited the same lines, you’ll get a conflict — which Git will ask you to manually resolve.
+# 	3.	If you touched different files or lines, Git will auto-merge safely.
+
+# Rebase moves your feature branch’s commits to the tip of another branch (usually main), so your changes appear 
+# as if they were made on top of the latest mainline code.
+
+# Remote-tracking branches are **read-only references** in your local Git repo that **mirror the state of branches 
+# in a remote repository** (like GitHub or GitLab).
+
+
+
+
 # blackscoles
 # ito calculus

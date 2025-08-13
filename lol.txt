@@ -1,0 +1,92 @@
+
+A CPU core is the physical processing unit of a central processing unit (CPU).
+It is the component responsible for executing instructions and performing calculations.
+A CPU can have multiple cores
+
+A worker is a software process (or thread) set up by an application server—or components like NGINX,
+HAProxy, or Gunicorn—to handle requests. Each worker runs independently and gets scheduled onto CPU threads.
+
+Threads share the same resources as the core they are running on, such as memory and cache. 
+Threads may be moved from core to core by the scheduler 
+the os saves the threads state and loads the threads state into the new core 
+Every migration flushes or invalidates CPU caches (L1/L2) for that thread. Threrefore, Too much migration = scheduler thrashing.
+That’s why high-performance apps often pin workers to cores (“CPU affinity”) so threads don’t bounce around unnecessarily.
+
+
+What is scheduler thrashing? 
+•	In an OS, the scheduler decides which thread runs on which CPU core at any moment.
+•	Thrashing happens when there are way more runnable threads than CPU cores, so the OS keeps constantly switching between them.
+•	Every switch has a cost (context switch overhead — saving/restoring CPU registers, caches, etc.).
+•	If this happens too often, more CPU time is spent switching than doing real work.
+
+•	If you set workers ≈ CPU cores (or a small multiple of it), you limit the number of active threads competing for CPU time.	
+•	Each worker process handles multiple requests in a controlled way (async or limited thread pool), so the OS isn’t overwhelmed with thousands of threads to juggle.
+
+
+
+•	NGINX (multiple process, single threaded worker) scales horizontally via processes (workers). Each worker has one thread - a single event loop
+•	HAProxy (multithreaded) scales inside a process via threads. It is optimized for latency
+
+Its internals are written to be thread-safe to avoid race issues and scheduling issues are solved by it so that scheduler thrashing does not 
+occour 
+
+In nginx, in a single event loop, we dont have to worry about local variables , every active connection/request has its
+own context object in memory.
+
+In NGINX, one request is assigned entirely to a single worker running on one CPU core, whereas in HAProxy, a request can be handled by multiple threads. In addition, a worker in NGINX may handle multiple requests at the same time.
+
+
+
+
+
+
+The load balancer can then relay traffic to each of them, allowing you to grow your capacity to serve more
+clients without asking those clients to connect to each server directly.
+
+
+Not havign a load baalncer on the frtonend side that maybe calls some internal container-:
+1 its in the spirit of the microservice architecture 
+2 no health checks 
+3 direct acess to the backend container snce the backend container would be in the same network
+
+
+Yep, you’ve got it. In Docker Compose you can have two networks (e.g., frontend_net and backend_net), and run
+a load balancer container attached to both. Security in microservices improves when frontend and backend run on separate networks, with a load balancer bridging them to control and filter traffic.
+This prevents direct access to sensitive backend endpoints while still enabling necessary communication.
+
+•	A DNS (Domain Name System) eg myapp.com can have multiple ip addresses associated with them 
+•	DNS works by returning multiple IP addresses for the same domain — ideally pointing to different machines/VMs in different locations.
+•	DNS can map one domain to multiple IPs, enabling multiple load balancer replicas behind the same URL for scalability and fault tolerance.
+•	In production, requests flow: client → DNS → one of several load balancers → appropriate service container.
+
+
+
+HTTP request
+•	Purpose: A protocol that defines how to format and interpret messages between web clients and servers.
+
+TCP connection
+•	Purpose: Provides a reliable, ordered, error-checked data stream between two endpoints
+
+
+
+•	It’s the last point where both branches had identical history.
+•	Git looks at:
+1.	What changed from merge base → branch A (e.g., main)
+2.	What changed from merge base → branch B (e.g., your feature branch)
+•	If the same lines in the same file were changed in both sets of changes → overlap → conflict.
+•	If changes are in different lines or different files → Git applies both automatically.
+
+
+# its good practise to have the requirements seprate for every container. 
+# How do we ensure that given a conda env and then the docker containers.
+# How do we keep a track seprately and efficiently
+
+
+# learnings
+# how closely you have to work with systems 
+# given your current compute, how much can u allocate to the db and stuff
+# for eg I maxed out max connections but then I elarnt about buffers and how to increase memory for the postgres db 
+# then started using pg bouncer
+
+# challeneges 
+# your work on your local with the compute config of your local. how do you naviagte writing code that is supposed to run on some other compute
