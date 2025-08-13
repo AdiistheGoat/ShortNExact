@@ -4,7 +4,7 @@ services:
         api:
               image: api_img:latest
 
-              restart: always   # Ensures the container restarts automatically if it crashes
+              # restart: always   # Ensures the container restarts automatically if it crashes
               
               deploy:
                 resources:
@@ -141,6 +141,7 @@ services:
 
           volumes:
             - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+            - ./userlist.txt:/etc/pgbouncer/userlist.txt
 
           ports:
             - "6432:6432"

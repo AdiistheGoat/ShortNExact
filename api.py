@@ -12,6 +12,7 @@ import sqlalchemy as db
 import secrets
 import time
 from sqlalchemy.ext.asyncio import create_async_engine
+import asyncpg # ocnnects to a prosgres driver like postgres db or postgres bouncer
 
 # Initialize FastAPI application
 app = FastAPI()
@@ -155,6 +156,7 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
 @app.on_event("startup")
 async def startup():
 
+    # Getting the api_keys stuff for sqlalchemy queries
     # DEFINE THE DATABASE CREDENTIALS
     user = 'Aditya Goyal'
     password = 'cold feather'
@@ -177,9 +179,22 @@ async def startup():
     app.state.engine = engine
 
 
+    user = 'Aditya Goyal'
+    password = 'cold feather33'
+    host = "pgbouncer"
+    port = 6432
+    database = 'short_and_exact'
+    POOL_DSN = "postgresql://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port,database)
+
+    connection_pool = await asyncpg.connect(POOL_DSN)
+
+    app.state.pool = connection_pool
+
+
 @app.on_event("shutdown")
 async def shutdown():
     await app.state.engine.dispose()
+    await app.state.pool.close()
 
 
 """
