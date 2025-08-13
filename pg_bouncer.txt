@@ -1,0 +1,12 @@
+establishing new connections to the postgres db is expensive 
+whereas keeping the connections to the psotgres db is a process in itself and takes memory
+therefore server_idle_timeout is set to 1 hour...if connection i unused for one hour, remove it
+
+pool_mode = transaction to not block that connection to the pgbouncer by that client 
+the connection is disregarded with the client once the otuput of the query is returned
+in our code, we are doign that ourselves as well
+
+we also specify a server_lifetime to disregard any connection occouring for more than one hour. 
+this is to avoid memory bloat and releasign resources to the os
+
+pooling means keeping backend connections open longer so they can be reused instead of creating a new one for every client request.

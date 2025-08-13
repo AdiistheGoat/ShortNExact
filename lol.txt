@@ -90,3 +90,11 @@ TCP connection
 
 # challeneges 
 # your work on your local with the compute config of your local. how do you naviagte writing code that is supposed to run on some other compute
+
+
+the client-server architecture is slow, inefficient, and doesn’t scale. It is limited to the number of client connections that the
+Database server can serve due to its resource limits of CPU and Memory.
+
+it spinds up a process for every request it recieves 
+
+a pgbouncer can only be used with one postgres db

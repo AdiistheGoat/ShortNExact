@@ -117,10 +117,40 @@ services:
 
          image: lb_img:latest
 
-         ports:
-            - 4000:4000
-
          restart: always  
+
+         depends_on:
+            api:
+              condition: service_started
+
+         ports:
+              - 4000:4000
+
+
+        pgbouncer:
+          image: edoburu/pgbouncer
+          # restart: always
+
+          depends_on:
+            db:
+              condition: service_healthy
+
+          environment:
+            DB_USER: "Aditya Goyal"
+            DB_PASSWORD: "cold feather"
+
+          volumes:
+            - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+
+          ports:
+            - "6432:6432"
+
+
+
+
+
+
+
 
 
 
