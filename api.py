@@ -61,10 +61,20 @@ async def validate_api_key(name,email,validity):
     
     one_day_time = timedelta(days=1)
     time_now = datetime.now()
-    query = select(func.count()).where(app.state.api_keys.c.name == name,app.state.api_keys.c.email==email,app.state.api_keys.c.time>=time_now-one_day_time)
-    async with app.state.engine.begin() as conn:
-        output = await conn.execute(query)
-    count = int(output.fetchall()[0][0])
+
+    conn  = await create_connection()
+    query = """
+    SELECT COUNT(*) 
+    FROM api_keys
+    WHERE
+     name = $1 AND
+     email = $2 AND
+     time >= $3;
+    """
+    count = await conn.fetchval(query,name,email,time_now-one_day_time)
+
+    print(f"Count for no of current api keys: {count}")
+
     if(count==MAX_API_KEYS_LAST_24_HOURS):
         return "You have exhausted your limit for the creation of the api_keys. Pls try again tomorrow"
     return None
@@ -151,6 +161,15 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
 
     r.expire(key, WINDOW_SIZE)  # Auto-expire key after window
 
+async def create_connection():
+    user = 'Aditya Goyal'
+    password = 'cold feather'
+    host = "pgbouncer"
+    port = 6432
+    database = 'short_and_exact'
+    POOL_DSN = "postgresql://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port,database)
+    connection_pool = await asyncpg.connect(POOL_DSN)
+    return connection_pool
 
 
 @app.on_event("startup")
@@ -177,18 +196,6 @@ async def startup():
 
     app.state.api_keys = api_keys
     app.state.engine = engine
-
-
-    user = 'Aditya Goyal'
-    password = 'cold feather33'
-    host = "pgbouncer"
-    port = 6432
-    database = 'short_and_exact'
-    POOL_DSN = "postgresql://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port,database)
-
-    connection_pool = await asyncpg.connect(POOL_DSN)
-
-    app.state.pool = connection_pool
 
 
 @app.on_event("shutdown")
@@ -239,19 +246,30 @@ async def reduce_content(item: Item,request: Request):
     no_of_words = item.no_of_words
     app_key = item.app_key
 
-    query = select(app.state.api_keys).where(app.state.api_keys.c.api_key == app_key)
+    # query = select(app.state.api_keys).where(app.state.api_keys.c.api_key == app_key)
 
-    async with app.state.engine.begin() as conn:
-        output_coroutine = await conn.execute(query)
+    # async with app.state.engine.begin() as conn:
+    #     output_coroutine = await conn.execute(query)
     
-    output = output_coroutine.fetchall()
+    # output = output_coroutine.fetchall()
+
+    conn  = await create_connection()
+
+    query = """
+    SELECT *
+    FROM api_keys
+    WHERE api_key = $1;
+    """
+    output = await conn.fetch(query,app_key)
+
+    print(f"list of current api keys: {output}")
 
     if(len(output)==0):
         return {"error": "App key authentication failed. Pls use correct key"}
     
-    api_key_list = output[0]
-    time_created = api_key_list.time
-    validity = api_key_list.validity
+    api_key_entry = output[0]
+    time_created = api_key_entry['time']
+    validity = api_key_entry['validity']
 
     duration1 = timedelta(days=validity)
     time_expired = time_created + duration1
@@ -300,9 +318,7 @@ async def generate_key(item: Auth,request: Request):
     WINDOW_SIZE = 60
 
     try:
-        time1 = time.perf_counter()
         rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
-        time2=time.perf_counter()
     except Exception as e:
         return {"error_msg": e.args}
 
@@ -310,29 +326,21 @@ async def generate_key(item: Auth,request: Request):
     email = item.email.strip()
     validity = item.validity # in days
 
-    # time3 = time.perf_counter()
     error_message = await validate_api_key(name,email,validity)
-    # time4 = time.perf_counter()
     if(error_message):
         return {"error_msg": error_message}
     
     time_current = datetime.now()
 
-    # time5 = time.perf_counter()
     api_key = generate_api_key()
-    # time6 = time.perf_counter()
 
-    time7 =  time.perf_counter()
-    query = db.insert(app.state.api_keys).values(api_key=api_key,name=name,email=email,time=time_current,validity=validity)
-    async with app.state.engine.begin() as conn:
-        await conn.execute(query)
-        await conn.commit()
-    # time8 = time.perf_counter()
+    conn  = await create_connection()
 
-    # print(f"time for rate limiter: {time2-time1}")
-    # print(f"validating api key {time4-time3}")
-    # print(f"geenrate api key {time6-time5}")
-    # print(f"inserting api key {time8-time7}")
+    query = """
+      INSERT INTO api_keys (api_key,name,email,time,validity) VALUES ($1,$2,$3,$4,$5)
+    """
+    output = await conn.execute(query,api_key,name,email,time_current,validity)
+    print(f"output of operation of inserting apikeys into db: {output}")
 
     return {"api_key": api_key}
 

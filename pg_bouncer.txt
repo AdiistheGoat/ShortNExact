@@ -39,3 +39,22 @@ Safe for async because that connection is used by exactly one task at a time. Pg
 Pool + acquire() per request: reuses an idle client connection if available (or opens a new one up to max_size).
 Each request gets its own connection object, so no concurrent use of the same connection.
 PgBouncer handles backend reuse/queuing behind the scenes.
+
+pg bouncer is bascially effective at reusing already created tcp connections in order to avoid the overhead of establishign them again 
+and acting as an itnermediary in order to prevent the side effects of the client server archtecture which is it is limited 
+by the no of requests it can actually process at a time on the actual server side. but those connections have to be stopped 
+on a regular basis to release os resources. 
+
+PgBouncer does not “share” or “pool” frontend connections between different clients — each is tied to the 
+specific client until you close it.
+
+
+This is just the polling logic in which a tcp connection to the postgre is deemed idle/when it goes back to the pool
+
+session
+PgBouncer keeps giving you the same backend connection for the entire life of your client connection to PgBouncer. That backend is “yours” until you disconnect from PgBouncer.
+You connect to PgBouncer → PgBouncer opens a backend to Postgres → you keep it until you close your DB connection.
+
+transaction
+PgBouncer gives you a backend only for the duration of one transaction. As soon as you COMMIT or ROLLBACK, that backend connection goes back to the pool and may be given to another client.
+You BEGIN → do queries → COMMIT → PgBouncer gives your backend to someone else.
