@@ -80,3 +80,13 @@ TCP connection
 # its good practise to have the requirements seprate for every container. 
 # How do we ensure that given a conda env and then the docker containers.
 # How do we keep a track seprately and efficiently
+
+
+# learnings
+# how closely you have to work with systems 
+# given your current compute, how much can u allocate to the db and stuff
+# for eg I maxed out max connections but then I elarnt about buffers and how to increase memory for the postgres db 
+# then started using pg bouncer
+
+# challeneges 
+# your work on your local with the compute config of your local. how do you naviagte writing code that is supposed to run on some other compute

@@ -5,7 +5,10 @@ nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
 from collections import defaultdict
 
-
+#ToDo:
+# store the current least text and least no of words
+# integrate different starting points always
+# fix the multiple ....
 
 class ML: 
 
@@ -26,7 +29,7 @@ class ML:
 
 
 
-    def llm_orchestrator(self,input_text):
+    async def llm_orchestrator(self,input_text):
         """
         Iteratively reduces or adjusts the word count of input text to match the desired target using LLM-guided tool invocation.
 
@@ -98,7 +101,7 @@ class ML:
                History of tools called: {dic_history}
             """
 
-            response = self.client.responses.create(
+            response = await self.client.responses.create(
                 model="gpt-4.1",
                 input = message,
                 top_p=0.3,
@@ -113,7 +116,7 @@ class ML:
 
             print(f"Calling {function_str}")
 
-            curr_input_text = self.call_function(function_str,curr_input_text)
+            curr_input_text = await self.call_function(function_str,curr_input_text)
             curr_count = self.count_words(curr_input_text)
 
             liste = [True if dic_history[i]>3 else False for i in dic_history ]
@@ -125,7 +128,7 @@ class ML:
         
         
 
-    def call_function(self,function_name,input_text):
+    async def call_function(self,function_name,input_text):
         """
         Dynamically calls the appropriate text rewriting function based on the function name.
 
@@ -138,16 +141,16 @@ class ML:
             str: The transformed text after applying the specified function.
         """
         if(function_name=="process_concisely"):
-            return self.process_concisely(input_text)
+            return await self.process_concisely(input_text)
 
         elif(function_name=="process_short"):
-            return self.process_short(input_text)
+            return await self.process_short(input_text)
 
         elif(function_name=="increase_words"):
-            return self.increase_words(input_text)
+            return await self.increase_words(input_text)
 
         elif(function_name=="decrease_words")  :
-            return self.decrease_words(input_text)
+            return await self.decrease_words(input_text)
 
 
 
@@ -165,7 +168,7 @@ class ML:
         matches = re.findall(pattern, text)
         return len(matches)
 
-    def process_text(self):
+    async def process_text(self):
         """
         Main entry point for processing the input text to match a target word count while preserving meaning and readability.
 
@@ -176,17 +179,17 @@ class ML:
         Returns:
             Tuple[str, int]: A tuple containing the rewritten text and its final word count.
         """
-        input_text = self.fix_syntax_and_grammar(self.input_text)
+        input_text = await self.fix_syntax_and_grammar(self.input_text)
 
         while(True):
-            processed_text = self.llm_orchestrator(input_text)
+            processed_text = await self.llm_orchestrator(input_text)
             if(processed_text != "Current iteration failed!"):
                 break
 
         return processed_text, self.count_words(processed_text)
 
 
-    def fix_syntax_and_grammar(self,input_text):
+    async def fix_syntax_and_grammar(self,input_text):
         """
         Fixes grammar and punctuation issues in the input text using an LLM.
         Args:
@@ -205,7 +208,7 @@ class ML:
             "Return ONLY the revised **gramatically corrected paragraph**. Do not explain anything."
         )
 
-        segment_response = self.client.responses.create(
+        segment_response = await self.client.responses.create(
             model="gpt-4.1",
             input=input_text,
             top_p=0.3,
@@ -217,7 +220,7 @@ class ML:
         return segmented_text 
 
 
-    def process_concisely(self,input_text):
+    async def process_concisely(self,input_text):
         """
         Creates a semantically concise version of the input text.
 
@@ -241,7 +244,7 @@ class ML:
             "Pls dont chnage the word count of the text. Just divide the text into different parts"
         )
 
-        segment_response = self.client.responses.create(
+        segment_response = await self.client.responses.create(
             model="gpt-4.1",
             input=input_text,
             top_p=0.3,
@@ -306,7 +309,7 @@ class ML:
             """
 
             for index in  range(len(curr_blobs)):
-                refine_response = self.client.responses.create(
+                refine_response = await self.client.responses.create(
                     model="gpt-4.1",
                     input=curr_blobs[index],
                     top_p=0.3,
@@ -336,13 +339,13 @@ class ML:
             print('Percentage to reduce:', to_reduce_percentage)
             print("\n")
 
-        final_output = self.process_short(final_output)
+        final_output = await self.process_short(final_output)
 
         return final_output
     
 
 
-    def process_short(self,input_text):
+    async def process_short(self,input_text):
         """
         Slightly shortens the input text to fit within the specified word count.
 
@@ -404,7 +407,7 @@ class ML:
                     f"Max no words you can reduce: {to_reduce}"
                 )
 
-                response = self.client.responses.create(
+                response = await self.client.responses.create(
                     model="gpt-4.1",
                     input = f"{user_input}",
                     top_p = 0.3,
@@ -442,15 +445,15 @@ class ML:
         if(final_no_of_words==self.number_of_words):
             return final_text
         if(final_no_of_words>self.number_of_words):
-            return self.decrease_words(final_text)
+            return await self.decrease_words(final_text)
         else:
-            return self.increase_words(final_text) 
+            return await self.increase_words(final_text) 
 
     
     """
     Slightly increases the no of words to the desired word count by increasing content examples
     """
-    def increase_words(self,input_text):
+    async def increase_words(self,input_text):
         """
         Expands an already input_text to reach a target word count.
         
@@ -519,7 +522,7 @@ class ML:
                     f"Max no words you can increase: {to_increase}"
                 )
 
-                response = self.client.responses.create(
+                response = await self.client.responses.create(
                     model="gpt-4.1",
                     input = f"{user_input}",
                     top_p = 0.3,
@@ -559,7 +562,7 @@ class ML:
     """
     Slightly increases the no of words to the desired word count by decreasing some content examples
     """
-    def decrease_words(self,input_text):
+    async def decrease_words(self,input_text):
         """
         Further shortens an already condensed input_text to reach a target word count.
         
@@ -629,7 +632,7 @@ class ML:
                     f"Max no words you can reduce: {to_reduce}"
                 )
 
-                response = self.client.responses.create(
+                response = await self.client.responses.create(
                     model="gpt-4.1",
                     input = f"{user_input}",
                     top_p = 0.3,
