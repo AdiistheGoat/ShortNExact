@@ -13,6 +13,7 @@ import secrets
 import time
 from sqlalchemy.ext.asyncio import create_async_engine
 import asyncpg # ocnnects to a prosgres driver like postgres db or postgres bouncer
+import asyncio
 
 # Initialize FastAPI application
 app = FastAPI()
@@ -73,7 +74,7 @@ async def validate_api_key(name,email,validity):
     """
     count = await conn.fetchval(query,name,email,time_now-one_day_time)
 
-    print(f"Count for no of current api keys: {count}")
+    # print(f"Count for no of current api keys: {count}")
 
     if(count==MAX_API_KEYS_LAST_24_HOURS):
         return "You have exhausted your limit for the creation of the api_keys. Pls try again tomorrow"
@@ -162,14 +163,20 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
     r.expire(key, WINDOW_SIZE)  # Auto-expire key after window
 
 async def create_connection():
+
     user = 'Aditya Goyal'
     password = 'cold feather'
     host = "pgbouncer"
     port = 6432
     database = 'short_and_exact'
     POOL_DSN = "postgresql://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port,database)
-    connection_pool = await asyncpg.connect(POOL_DSN)
-    return connection_pool
+
+    while(True):
+        try:
+            connection_pool = await asyncpg.connect(POOL_DSN)
+            return connection_pool
+        except Exception as e:
+            pass
 
 
 @app.on_event("startup")
@@ -262,7 +269,7 @@ async def reduce_content(item: Item,request: Request):
     """
     output = await conn.fetch(query,app_key)
 
-    print(f"list of current api keys: {output}")
+    # print(f"list of current api keys: {output}")
 
     if(len(output)==0):
         return {"error": "App key authentication failed. Pls use correct key"}
@@ -339,8 +346,8 @@ async def generate_key(item: Auth,request: Request):
     query = """
       INSERT INTO api_keys (api_key,name,email,time,validity) VALUES ($1,$2,$3,$4,$5)
     """
-    output = await conn.execute(query,api_key,name,email,time_current,validity)
-    print(f"output of operation of inserting apikeys into db: {output}")
+    await conn.execute(query,api_key,name,email,time_current,validity)
+    # print(f"output of operation of inserting apikeys into db: {output}")
 
     return {"api_key": api_key}
 
