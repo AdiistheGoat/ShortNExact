@@ -10,32 +10,8 @@ from datetime import datetime,timedelta
 from sqlalchemy import create_engine,MetaData,Table, Column,DateTime,Integer,Text,select,text,func, inspect
 import sqlalchemy as db
 import secrets
-
-# DEFINE THE DATABASE CREDENTIALS
-user = 'Aditya Goyal'
-password = 'cold feather'
-host = 'db'
-port = 5432
-database = 'short_and_exact'
-
-# Establish a connection to the PostgreSQL database
-try: 
-    engine = create_engine(url="postgresql://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port, database))
-    conn = engine.connect()
-except Exception as e:
-    print("Connection could not be made due to the following error: \n", e)
-
-
-# Create inspector
-inspector = inspect(engine)
-
-# Get table names
-tables = inspector.get_table_names()
-print("Tables in the database:", tables)
-
-# Reflect existing 'api_keys' table from the database
-meta = MetaData()
-api_keys = db.Table('api_keys', meta,autoload_with=engine) #Table object
+import time
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # Initialize FastAPI application
 app = FastAPI()
@@ -44,7 +20,7 @@ app = FastAPI()
 r = redis.Redis(host='redis', port=6379, db=0)
 
 # Rate limit config: 100 requests per 60 seconds per IP
-MAX_API_KEYS_LAST_24_HOURS = 10
+MAX_API_KEYS_LAST_24_HOURS = 10000
 
 # Define request schema for main API functionality
 class Item(BaseModel):
@@ -61,7 +37,7 @@ class Auth(BaseModel):
     validity: int          # Requested validity of the API key (in days)
 
 
-def validate_api_key(name,email,validity):
+async def validate_api_key(name,email,validity):
     """
     Validates the API key creation request based on input constraints.
 
@@ -84,8 +60,10 @@ def validate_api_key(name,email,validity):
     
     one_day_time = timedelta(days=1)
     time_now = datetime.now()
-    query = select(func.count()).where(api_keys.c.name == name,api_keys.c.email==email,api_keys.c.time>=time_now-one_day_time)
-    count = int(conn.execute(query).fetchall()[0][0])
+    query = select(func.count()).where(app.state.api_keys.c.name == name,app.state.api_keys.c.email==email,app.state.api_keys.c.time>=time_now-one_day_time)
+    async with app.state.engine.begin() as conn:
+        output = await conn.execute(query)
+    count = int(output.fetchall()[0][0])
     if(count==MAX_API_KEYS_LAST_24_HOURS):
         return "You have exhausted your limit for the creation of the api_keys. Pls try again tomorrow"
     return None
@@ -107,12 +85,12 @@ def process_endpoint(key: str):
         openai.OpenAI: Initialized client if key is valid, otherwise None.
     """
     try:
-        client = openai.OpenAI(api_key=key)
+        client = openai.AsyncOpenAI(api_key=key)
         client.models.list()
         return client
 
     except Exception as e:
-        return None
+        print(e)
 
 
 def validate_input(option:int, input_text:str, no_of_words:int):
@@ -150,16 +128,15 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
     ip =  request.headers.get('X-Forwarded-For')
     key = f"{ip}"
     now = time.time()
-    print(f"ip : {ip}")
-    print(f"current time: {now}")
+    # print(f"ip : {ip}")
+    # print(f"current time: {now}")
 
     # Remove timestamps outside the sliding window
     timestamps = r.lrange(key, 0, -1)
     valid_timestamps = [float(ts) for ts in timestamps if now - float(ts) <= WINDOW_SIZE]
-    print(f"Prev timestamps: {valid_timestamps}")
+    # print(f"Prev timestamps: {valid_timestamps}")
 
     if len(valid_timestamps) == RATE_LIMIT:
-        print("expcetion raised")
         raise Exception("Rate limit exceeded")
 
     r.delete(key)
@@ -168,10 +145,42 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
 
     r.rpush(key, now)  # Add current timestamp
 
-    timestamps = r.lrange(key, 0, -1)
-    print(f"Final timestamps: {timestamps}")
+    # timestamps = r.lrange(key, 0, -1)
+    # print(f"Final timestamps: {timestamps}")
 
     r.expire(key, WINDOW_SIZE)  # Auto-expire key after window
+
+
+
+@app.on_event("startup")
+async def startup():
+
+    # DEFINE THE DATABASE CREDENTIALS
+    user = 'Aditya Goyal'
+    password = 'cold feather'
+    host = 'db'
+    port = 5432
+    database = 'short_and_exact'
+
+    meta = MetaData()
+
+    try:
+        engine = create_async_engine(url="postgresql+asyncpg://{0}:{1}@{2}:{3}/{4}".format(user, password, host, port, database),pool_size=40, max_overflow=20)
+    except Exception as e:
+        print("Connection could not be made due to the following error: \n", e)
+
+
+    async with engine.begin() as conn:
+        api_keys = await conn.run_sync(lambda sync_conn: db.Table('api_keys',meta, autoload_with=sync_conn))
+
+    app.state.api_keys = api_keys
+    app.state.engine = engine
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await app.state.engine.dispose()
+
 
 """
 Health check endpoint for the API.
@@ -189,7 +198,7 @@ def health_check(request: Request):
 
 
 @app.get("/")
-def reduce_content(item: Item,request: Request):
+async def reduce_content(item: Item,request: Request):
     """
     API endpoint that processes input text based on selected option.
 
@@ -215,8 +224,12 @@ def reduce_content(item: Item,request: Request):
     no_of_words = item.no_of_words
     app_key = item.app_key
 
-    query = select(api_keys).where(api_keys.c.api_key == app_key)
-    output = conn.execute(query).fetchall()
+    query = select(app.state.api_keys).where(app.state.api_keys.c.api_key == app_key)
+
+    async with app.state.engine.begin() as conn:
+        output_coroutine = await conn.execute(query)
+    
+    output = output_coroutine.fetchall()
 
     if(len(output)==0):
         return {"error": "App key authentication failed. Pls use correct key"}
@@ -248,7 +261,7 @@ def reduce_content(item: Item,request: Request):
     
     refined_input_text = " ".join(input_text.split())
     ml_instance = ML(refined_input_text, no_of_words, option_string,client)
-    processed_text,processed_text_length = ml_instance.process_text()
+    processed_text,processed_text_length = await ml_instance.process_text()
     return {"processed_text": processed_text, "processed_text_length": processed_text_length}
 
 
@@ -256,7 +269,7 @@ def reduce_content(item: Item,request: Request):
 # store the time the api key was requested 
 # when user provides an api key, 
 @app.get("/api_key")
-def generate_key(item: Auth,request: Request):
+async def generate_key(item: Auth,request: Request):
     """
     Endpoint to generate and return a new API key for valid user input.
 
@@ -268,11 +281,13 @@ def generate_key(item: Auth,request: Request):
         dict: A dictionary containing either the generated API key or an error message.
     """
 
-    RATE_LIMIT = 5
+    RATE_LIMIT = 3000
     WINDOW_SIZE = 60
 
     try:
+        time1 = time.perf_counter()
         rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
+        time2=time.perf_counter()
     except Exception as e:
         return {"error_msg": e.args}
 
@@ -280,18 +295,35 @@ def generate_key(item: Auth,request: Request):
     email = item.email.strip()
     validity = item.validity # in days
 
-    error_message = validate_api_key(name,email,validity)
+    # time3 = time.perf_counter()
+    error_message = await validate_api_key(name,email,validity)
+    # time4 = time.perf_counter()
     if(error_message):
         return {"error_msg": error_message}
     
-    time = datetime.now()
+    time_current = datetime.now()
+
+    # time5 = time.perf_counter()
     api_key = generate_api_key()
-    query = db.insert(api_keys).values(api_key=api_key,name=name,email=email,time=time,validity=validity)
-    conn.execute(query)
-    conn.commit()
+    # time6 = time.perf_counter()
+
+    time7 =  time.perf_counter()
+    query = db.insert(app.state.api_keys).values(api_key=api_key,name=name,email=email,time=time_current,validity=validity)
+    async with app.state.engine.begin() as conn:
+        await conn.execute(query)
+        await conn.commit()
+    # time8 = time.perf_counter()
+
+    # print(f"time for rate limiter: {time2-time1}")
+    # print(f"validating api key {time4-time3}")
+    # print(f"geenrate api key {time6-time5}")
+    # print(f"inserting api key {time8-time7}")
+
     return {"api_key": api_key}
 
 
+
+# async with handles resource management automatically
 
 
 # meta = MetaData()
@@ -355,3 +387,17 @@ def generate_key(item: Auth,request: Request):
 # for fronted, go through api_gateway 
 
 # You would need intialisation files like init.sql apart from the docker images as well, right? 
+
+
+# time for rate limiter: 0.005319374999089632
+
+
+# validating api key 0.015565874997264473
+
+
+# geenrate api key 0.00042491700151003897
+
+
+# inserting api key 0.004656332999729784
+
+# need async for uploading to db
