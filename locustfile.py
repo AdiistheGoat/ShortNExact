@@ -11,9 +11,7 @@ class HelloWorldUser(HttpUser):
             "email": "adigoyal0807@gmail.com",
             "validity": 23
         }
-        self.client.get('/api_key', json = params)
-
-
+        self.client.get('/api_key', json = params)        
     # @task
     # def reduce_content(self):
     #     params = {
