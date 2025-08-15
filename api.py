@@ -73,6 +73,7 @@ async def validate_api_key(name,email,validity):
      time >= $3;
     """
     count = await conn.fetchval(query,name,email,time_now-one_day_time)
+    await conn.close()
 
     # print(f"Count for no of current api keys: {count}")
 
@@ -204,6 +205,9 @@ async def startup():
     app.state.api_keys = api_keys
     app.state.engine = engine
 
+    # async with engine.begin() as conn: 
+    #     output = await conn.execute(text("SELECT name, setting FROM pg_settings WHERE name IN ('max_connections', 'superuser_reserved_connections');"))
+    #     print(output.fetchall())
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -347,6 +351,7 @@ async def generate_key(item: Auth,request: Request):
       INSERT INTO api_keys (api_key,name,email,time,validity) VALUES ($1,$2,$3,$4,$5)
     """
     await conn.execute(query,api_key,name,email,time_current,validity)
+    await conn.close()
     # print(f"output of operation of inserting apikeys into db: {output}")
 
     return {"api_key": api_key}

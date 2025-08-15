@@ -121,7 +121,7 @@ services:
 
          depends_on:
             api:
-              condition: service_started
+              condition: service_healthy
 
          ports:
               - 4000:4000
@@ -143,8 +143,8 @@ services:
             - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
             - ./userlist.txt:/etc/pgbouncer/userlist.txt
 
-          ports:
-            - "6432:6432"
+          # ports:
+          #   - "6432:6432"
 
 
 
