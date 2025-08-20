@@ -54,7 +54,7 @@ async def validate_api_key(name,email,validity):
     if not(name):
         return "Name not Found"
     
-    if not(email) or "@" not in email:
+    if not(email) or "@" not in email or ".com" not in email:
         return "Valid email not found"
     
     if(validity>31):
@@ -331,7 +331,7 @@ async def generate_key(item: Auth,request: Request):
     try:
         rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
     except Exception as e:
-        return {"error_msg": e.args}
+        return {"error": e.args}
 
     name = item.name.strip()
     email = item.email.strip()
@@ -339,7 +339,7 @@ async def generate_key(item: Auth,request: Request):
 
     error_message = await validate_api_key(name,email,validity)
     if(error_message):
-        return {"error_msg": error_message}
+        return {"error": error_message}
     
     time_current = datetime.now()
 

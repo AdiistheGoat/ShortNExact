@@ -144,7 +144,7 @@ class frontend:
                 email = gr.Textbox(label="Email", placeholder="Enter your email here...", type="email")
                 validity = gr.Number(label="Validity",step=1,minimum=1,value = 1)
                 generate_button_text = gr.Button("Generate API Key")
-                output_key = gr.Textbox(label="Your Api Key", placeholder="Save the key securely, it will not be shown again!",type="password")
+                output_key = gr.Textbox(label="Your Api Key", placeholder="Save the key securely, it will not be shown again!")
                 btn_back_details = gr.Button("Go to Text Processing App")
 
             # wiring
