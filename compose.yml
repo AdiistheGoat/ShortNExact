@@ -4,7 +4,7 @@ services:
         api:
               image: api_img:latest
 
-              restart: always   # Ensures the container restarts automatically if it crashes
+              # restart: always   # Ensures the container restarts automatically if it crashes
               
               deploy:
                 resources:
@@ -117,10 +117,41 @@ services:
 
          image: lb_img:latest
 
-         ports:
-            - 4000:4000
-
          restart: always  
+
+         depends_on:
+            api:
+              condition: service_healthy
+
+         ports:
+              - 4000:4000
+
+
+        pgbouncer:
+          image: edoburu/pgbouncer
+          # restart: always
+
+          depends_on:
+            db:
+              condition: service_healthy
+
+          environment:
+            DB_USER: "Aditya Goyal"
+            DB_PASSWORD: "cold feather"
+
+          volumes:
+            - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+            - ./userlist.txt:/etc/pgbouncer/userlist.txt
+
+          # ports:
+          #   - "6432:6432"
+
+
+
+
+
+
+
 
 
 

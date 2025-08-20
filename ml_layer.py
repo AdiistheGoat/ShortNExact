@@ -5,10 +5,21 @@ nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
 from collections import defaultdict
 
-#ToDo:
+#ToDo (ML):
 # store the current least text and least no of words
 # integrate different starting points always
-# fix the multiple ....
+# fix the multiple .... issue 
+
+#ToDo (Load Testing):
+# deep dive into load testing and see how i am able to create > 10000 request in past 24 hours when it should have stopped me.
+# How does locust load test. what do the metrics mean. what qualifies as a correct response for locust and what issues could be 
+# there because of which that error is coming
+
+#ToDo
+#Host on EC2
+
+#ToDo
+# create frontend for generating api key 
 
 class ML: 
 

@@ -69,3 +69,11 @@ A good practise is to have enviroment variables in a .env file
 
 with anyio, we can easily call an async fucntion from a sync functioon and vice versa and create a new thread for it 
 (so that it does not block in the latter case and we does not harm the current event loop since the even loop async.run is only called once)
+
+
+•	Raw threading.Thread is unmanaged; loop won’t await it.
+•	Use await anyio.to_thread.run_sync(...) (or process pools for heavy CPU) to integrate with async.
+
+1.	Workers = separate processes, each with their own event loop (async) or threadpool (sync).
+2.	Sync endpoints (no async/await) → concurrency limited by per-worker threadpool size; more workers = more total concurrent requests.
+3.	Async endpoints + non-blocking I/O → one worker can juggle many concurrent requests; more workers only help with CPU/pool caps or long-lived connections.

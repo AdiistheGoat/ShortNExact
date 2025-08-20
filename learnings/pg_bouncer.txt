@@ -1,0 +1,60 @@
+the client-server architecture is slow, inefficient, and doesn’t scale. It is limited to the number of client connections that the
+Database server can serve due to its resource limits of CPU and Memory.
+
+it spinds up a process for every request it recieves 
+
+a pgbouncer can only be used with one postgres db
+
+
+establishing new connections to the postgres db is expensive 
+whereas keeping the connections to the psotgres db is a process in itself and takes memory
+therefore server_idle_timeout is set to 1 hour...if connection i unused for one hour, remove it
+
+pool_mode = transaction to not block that connection to the pgbouncer by that client 
+the connection is disregarded with the client once the otuput of the query is returned
+in our code, we are doign that ourselves as well
+
+we also specify a server_lifetime to disregard any connection occouring for more than one hour. 
+this is to avoid memory bloat and releasign resources to the os
+
+pooling means keeping backend connections open longer so they can be reused instead of creating a new one for every client request.
+
+pgbouncer basically helps to use the same conenction across requests, schedule it , and also handle more connections 
+than the db can handle
+
+
+No. A single DB connection can have only one in‑flight operation at a time.
+	•	asyncpg will error (e.g., “another operation is in progress”) if two coroutines try to use the same connection concurrently.
+	•	SQLAlchemy connections/sessions are not safe for concurrent use either.
+
+# BAD: two tasks share the same `conn` at the same time (this is wrong)
+t1 = asyncio.create_task(conn.execute("SELECT 1"))
+t2 = asyncio.create_task(conn.execute("SELECT 2"))
+await asyncio.gather(t1, t2)  # race/error
+
+
+Per‑request connect(): opens a fresh client → PgBouncer connection for that request, uses it, closes it. 
+Safe for async because that connection is used by exactly one task at a time. PgBouncer still pools the backend to Postgres.
+
+Pool + acquire() per request: reuses an idle client connection if available (or opens a new one up to max_size).
+Each request gets its own connection object, so no concurrent use of the same connection.
+PgBouncer handles backend reuse/queuing behind the scenes.
+
+pg bouncer is bascially effective at reusing already created tcp connections in order to avoid the overhead of establishign them again 
+and acting as an itnermediary in order to prevent the side effects of the client server archtecture which is it is limited 
+by the no of requests it can actually process at a time on the actual server side. but those connections have to be stopped 
+on a regular basis to release os resources. 
+
+PgBouncer does not “share” or “pool” frontend connections between different clients — each is tied to the 
+specific client until you close it.
+
+
+This is just the polling logic in which a tcp connection to the postgre is deemed idle/when it goes back to the pool
+
+session
+PgBouncer keeps giving you the same backend connection for the entire life of your client connection to PgBouncer. That backend is “yours” until you disconnect from PgBouncer.
+You connect to PgBouncer → PgBouncer opens a backend to Postgres → you keep it until you close your DB connection.
+
+transaction
+PgBouncer gives you a backend only for the duration of one transaction. As soon as you COMMIT or ROLLBACK, that backend connection goes back to the pool and may be given to another client.
+You BEGIN → do queries → COMMIT → PgBouncer gives your backend to someone else.

@@ -3,11 +3,12 @@ from locust import HttpUser, task,constant
 class HelloWorldUser(HttpUser):
 
     host = "http://127.0.0.1:4000"
+    wait_time = constant(0.01)
 
     @task
     def api_key(self):
         params={
-            "name": "Aditya goyal test 11",
+            "name": "Aditya goyal test 14",
             "email": "adigoyal0807@gmail.com",
             "validity": 23
         }
