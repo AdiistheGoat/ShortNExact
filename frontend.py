@@ -46,14 +46,14 @@ class frontend:
 
         output = output.json()
         if("error" in output):
-            return output["error"],output["error"]
+            return output["error"]
         processed_text = output["processed_text"]
         processed_text_length = output["processed_text_length"]
         return processed_text,processed_text_length
     
 
 
-    def generate_api_key(name: str,email: str,validity: int,request: gr.Request):
+    def generate_api_key(self,name: str,email: str,validity: int,request: gr.Request):
         """
         Generate a new API key by sending user details to a backend API.
 
@@ -84,10 +84,20 @@ class frontend:
         
         output = output.json()
         if("error" in output):
-            return output["error"],output["error"]
+            return output["error"]
         api_key = output["api_key"]
         return api_key
     
+
+    def show_details_page(self):
+        # switch to details page
+        return gr.update(visible=False), gr.update(visible=True)
+
+    def show_key_page(self):
+        # switch back to home page
+        return gr.update(visible=True), gr.update(visible=False)
+
+
 
     def demo(self):
         """
@@ -99,31 +109,54 @@ class frontend:
         demo = gr.Blocks(theme=gr.themes.Soft())
 
         with demo:
-            gr.Markdown(
-            """
-            # Welcome to the Text Processing App!
-            This app allows you to process text by either concisely presenting ideas from a large text or
-            shortening text to fit within a specified word count.
-            """)
 
-            endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...", type="password")
+            with gr.Column(visible=False) as details_page:
+                gr.Markdown(
+                """
+                # Welcome to the Text Processing App!
+                This app allows you to process text by either concisely presenting ideas from a large text or
+                shortening text to fit within a specified word count.
+                """)
+                endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...", type="password")
 
-            endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...", type="password")
+                btn_generate_key = gr.Button("Go to Generate API Key")
 
-            input = gr.Textbox(label="Input Text", placeholder="Enter your text here...")
+                endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...", type="password")
 
-            number_of_words = gr.Number(label="Number of Words", step=1,minimum=1,value = 1)
+                input = gr.Textbox(label="Input Text", placeholder="Enter your text here...")
 
-            option = gr.Radio(["Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)",
-                        "Shorten text (choose if you want to slightly shorten text to fix it within a word count)"], 
-                        label="Options")
+                number_of_words = gr.Number(label="Number of Words", step=1,minimum=1,value = 1)
+
+                option = gr.Radio(["Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)",
+                            "Shorten text (choose if you want to slightly shorten text to fix it within a word count)"], 
+                            label="Options")
+                
+                clear_button = gr.ClearButton(components=[input, number_of_words, option])
+
+                submit_button_text = gr.Button("Submit")
+
+                output_text = gr.Textbox(label="Output Text", placeholder="Your processed text will appear here...")
+                output_no_of_words = gr.Textbox(label="Output Word Count", placeholder="Word count of the processed text will appear here...")
             
-            clear_button = gr.ClearButton(components=[input, number_of_words, option])
 
-            submit_button_text = gr.Button("Submit")
+            with gr.Column(visible=True) as key_page:
+                name = gr.Textbox(label="Name", placeholder="Enter your name here...")
+                email = gr.Textbox(label="Email", placeholder="Enter your email here...", type="email")
+                validity = gr.Number(label="Validity",step=1,minimum=1,value = 1)
+                generate_button_text = gr.Button("Generate API Key")
+                output_key = gr.Textbox(label="Your Api Key", placeholder="Save the key securely, it will not be shown again!",type="password")
+                btn_back_details = gr.Button("Go to Text Processing App")
 
-            output_text = gr.Textbox(label="Output Text", placeholder="Your processed text will appear here...")
-            output_no_of_words = gr.Textbox(label="Output Word Count", placeholder="Word count of the processed text will appear here...")
+            # wiring
+            btn_generate_key.click(
+                fn=self.show_key_page,
+                outputs=[key_page,details_page],
+            )
+
+            btn_back_details .click(
+                fn=self.show_details_page,
+                outputs=[key_page,details_page],
+           )
 
             submit_button_text.click(
                 fn=self.process,
@@ -131,7 +164,13 @@ class frontend:
                 outputs=[output_text,output_no_of_words]
             )
 
-        demo.launch(server_name="0.0.0.0", server_port=3000)
+            generate_button_text.click(
+                fn=self.generate_api_key,
+                inputs=[name, email, validity],
+                outputs=[output_key]
+            )
+
+        demo.queue().launch(server_name="0.0.0.0", server_port=3000)
 
 if __name__ == "__main__":
     print("Starting demo")
