@@ -199,7 +199,7 @@ class ML:
                 if(processed_text != "Current iteration failed!"):
                     break
         except Exception as e:
-            return f"Error during processing: {str(e)}",self.count_words(e)
+            return f"Error during processing: {str(e)}",self.count_words(str(e))
 
         return processed_text, self.count_words(processed_text)
 
