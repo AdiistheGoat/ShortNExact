@@ -190,12 +190,16 @@ class ML:
         Returns:
             Tuple[str, int]: A tuple containing the rewritten text and its final word count.
         """
-        input_text = await self.fix_syntax_and_grammar(self.input_text)
 
-        while(True):
-            processed_text = await self.llm_orchestrator(input_text)
-            if(processed_text != "Current iteration failed!"):
-                break
+        try: 
+            input_text = await self.fix_syntax_and_grammar(self.input_text)
+
+            while(True):
+                processed_text = await self.llm_orchestrator(input_text)
+                if(processed_text != "Current iteration failed!"):
+                    break
+        except Exception as e:
+            return f"Error during processing: {str(e)}",self.count_words(e)
 
         return processed_text, self.count_words(processed_text)
 

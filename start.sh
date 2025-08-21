@@ -1,4 +1,3 @@
-
 docker compose down
 docker system prune
 docker build -f Dockerfile.frontend -t frontend_img .

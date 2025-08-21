@@ -11,5 +11,6 @@ RUN apt-get update
 RUN apt-get --yes install curl
 
 RUN pip3 install -r frontend_requirements.txt
-EXPOSE 3000
+EXPOSE 80
+EXPOSE 443
 CMD ["python3", "frontend.py"]

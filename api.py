@@ -436,3 +436,8 @@ async def generate_key(item: Auth,request: Request):
 # inserting api key 0.004656332999729784
 
 # need async for uploading to db
+
+# questions:
+# how do you do it in prod..you haev some code, you run a ci/cd on it(units tests, build, and then deploy images)
+# how does the hsoting service get automatically updated with the new code without manual intervention and stopping the service?
+# do developers even get to test locally before deploying to prod? cause configuration files would have to be difference since computing enviroment is changed.
