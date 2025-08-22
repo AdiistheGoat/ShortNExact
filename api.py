@@ -157,7 +157,7 @@ def rate_limiter(request: Request,WINDOW_SIZE,RATE_LIMIT):
     # print(f"Prev timestamps: {valid_timestamps}")
 
     if len(valid_timestamps) == RATE_LIMIT:
-        raise Exception("Rate limit exceeded")
+        raise Exception("Too many tries. Please try again later.")
 
     r.delete(key)
     for ts in valid_timestamps:
