@@ -54,7 +54,7 @@ async def validate_api_key(name,email,validity):
     if not(name):
         return "Name not Found"
     
-    if not(email) or "@" not in email or ".com" not in email:
+    if not(email) or "@" not in email or "." not in email:
         return "Valid email not found"
     
     if(validity>31):
@@ -256,7 +256,7 @@ async def reduce_content(item: Item,request: Request):
     try:
         rate_limiter(request,RATE_LIMIT=RATE_LIMIT,WINDOW_SIZE=WINDOW_SIZE)
     except Exception as e:
-        return {"error": e.args}
+        return {"error": str(e)}
 
     llm_api_key = item.llm_api_key
     option = item.option
