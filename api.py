@@ -124,6 +124,13 @@ def validate_input(option:int, input_text:str, no_of_words:int):
         return "Input text cannot be empty."
     if no_of_words > len(input_text.split()):
         return "Input text needs to be longer than the number of words you want to shorten it to."
+    
+    if(len(input_text.split()))>10000:
+        return "Input text should not exceed 10000 words."
+    
+    if(no_of_words<0.05*len(input_text.split())):
+        return "You cannot reduce the text to less than 5% of the original length."
+
     return None
 
 

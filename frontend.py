@@ -110,22 +110,22 @@ class frontend:
 
         with demo:
 
-            with gr.Column(visible=False) as details_page:
+            with gr.Column(visible=True) as details_page:
                 gr.Markdown(
                 """
                 # Welcome to the Text Processing App!
                 This app allows you to process text by either concisely presenting ideas from a large text or
                 shortening text to fit within a specified word count.
                 """)
-                endpoint_app = gr.Textbox(label="Enter app API key", placeholder="Enter your app api endpoint here...", type="password")
+                endpoint_app = gr.Textbox(label="Enter ShortAndEXACT app API key", placeholder="Enter your app api endpoint here...", type="password")
 
-                btn_generate_key = gr.Button("Go to Generate API Key")
+                btn_generate_key = gr.Button("Go to Generate API Key (if you don't have one)")
 
                 endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...", type="password")
 
                 input = gr.Textbox(label="Input Text", placeholder="Enter your text here...")
 
-                number_of_words = gr.Number(label="Number of Words", step=1,minimum=1,value = 1)
+                number_of_words = gr.Number(label="Number of Words you want to reduce to", step=1,minimum=1,value = 1)
 
                 option = gr.Radio(["Concisely present ideas(choose if want to concisely present ideas from a large text within a word count)",
                             "Shorten text (choose if you want to slightly shorten text to fix it within a word count)"], 
@@ -139,7 +139,7 @@ class frontend:
                 output_no_of_words = gr.Textbox(label="Output Word Count", placeholder="Word count of the processed text will appear here...")
             
 
-            with gr.Column(visible=True) as key_page:
+            with gr.Column(visible=False) as key_page:
                 name = gr.Textbox(label="Name", placeholder="Enter your name here...")
                 email = gr.Textbox(label="Email", placeholder="Enter your email here...", type="email")
                 validity = gr.Number(label="Validity",step=1,minimum=1,value = 1)

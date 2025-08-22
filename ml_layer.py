@@ -38,6 +38,16 @@ class ML:
         self.option = option    
         self.client = client
 
+        self.reg = re.compile(
+        r"\b(?:"
+        r"[\p{L}\p{N}]+"                       # core
+        r"(?:[’'][\p{L}\p{N}]+)*"               # internal apostrophes: AI’s, don't
+        r"(?:-(?:[\p{L}\p{N}]+(?:[’'][\p{L}\p{N}]+)*))*"  # internal hyphen-minus groups: state-of-the-art
+        r"(?:\.(?=[\p{N}])[\p{N}]+)?"           # optional decimal tail: 3.14
+        r")\b",
+        re.WORD  # Unicode word boundaries (UAX-29-ish), no .replace() needed
+        )
+
 
 
     async def llm_orchestrator(self,input_text):
@@ -175,8 +185,7 @@ class ML:
         Returns:
             int: Total number of words detected, including abbreviations, hyphenated words, and numbers.
         """
-        pattern = r"\b(?:\w+(?:[-.']\w+)*)\b"
-        matches = re.findall(pattern, text)
+        matches = self.reg.findall(text)
         return len(matches)
 
     async def process_text(self):
@@ -192,12 +201,14 @@ class ML:
         """
 
         try: 
+            count = 0
             input_text = await self.fix_syntax_and_grammar(self.input_text)
 
-            while(True):
+            while(True) and count<2:
                 processed_text = await self.llm_orchestrator(input_text)
                 if(processed_text != "Current iteration failed!"):
                     break
+                count += 1
         except Exception as e:
             return f"Error during processing: {str(e)}",self.count_words(str(e))
 
@@ -286,7 +297,7 @@ class ML:
         print("\n")
 
         count = 0
-        while(True):
+        while(True and to_reduce > 0):
 
             if(count>=3):
                 if(len(curr_blobs)==1):
@@ -298,8 +309,6 @@ class ML:
                     for j in range(index,min(index+2,len(curr_blobs))):
                         cumulative_blob += curr_blobs[j]
                     new_blobs.append(cumulative_blob)
-                print(len(curr_blobs))
-                print(len(new_blobs))
                 curr_blobs = new_blobs
 
 
@@ -353,8 +362,6 @@ class ML:
             print('Words to reduce:', to_reduce)
             print('Percentage to reduce:', to_reduce_percentage)
             print("\n")
-
-        final_output = await self.process_short(final_output)
 
         return final_output
     
@@ -547,8 +554,8 @@ class ML:
                 increased = response.output[0].content[0].text.strip()
 
                 # Update word budget
-                old_len = len(line.split())
-                new_len = len(increased.split())
+                old_len = self.count_words(line)
+                new_len = self.count_words(increased)
                 delta = new_len - old_len
 
                 if delta > 0:
