@@ -1,5 +1,5 @@
 import openai
-import re
+import regex as re
 import nltk
 nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
@@ -10,16 +10,6 @@ from collections import defaultdict
 # integrate different starting points always
 # fix the multiple .... issue 
 
-#ToDo (Load Testing):
-# deep dive into load testing and see how i am able to create > 10000 request in past 24 hours when it should have stopped me.
-# How does locust load test. what do the metrics mean. what qualifies as a correct response for locust and what issues could be 
-# there because of which that error is coming
-
-#ToDo
-#Host on EC2
-
-#ToDo
-# create frontend for generating api key 
 
 class ML: 
 
@@ -142,10 +132,9 @@ class ML:
 
             liste = [True if dic_history[i]>3 else False for i in dic_history ]
             if True in liste:
-                return "Current iteration failed!"
+                return "Error: Current iteration failed! Try to increase the no of words you want to reduce to",curr_input_text
 
-
-        return curr_input_text
+        return "",curr_input_text
         
         
 
@@ -205,8 +194,8 @@ class ML:
             input_text = await self.fix_syntax_and_grammar(self.input_text)
 
             while(True) and count<2:
-                processed_text = await self.llm_orchestrator(input_text)
-                if(processed_text != "Current iteration failed!"):
+                error_msg,processed_text = await self.llm_orchestrator(input_text)
+                if(not error_msg):
                     break
                 count += 1
         except Exception as e:
@@ -316,7 +305,7 @@ class ML:
             system_prompt_concise = f"""
                 You are a concise and intelligent editor.
 
-                Your task is to take a given paragraph and reduce its length by at least { (to_reduce_percentage*100) + 10}% while preserving all core ideas, meaning, and tone.
+                Your task is to take a given paragraph and reduce its length by at least { (to_reduce_percentage*100) + 20}% while preserving all core ideas, meaning, and tone.
 
                 Guidelines:
                 - Eliminate redundant words, repetitive phrasing, and filler language.
@@ -327,7 +316,7 @@ class ML:
                 - Use natural, human-like language — not robotic or overly compressed.
                 - Remove lines only if they do not contribute to the core meaning and are outliers. 
                 - If the word count is not yet met, start removing lines that are not the most essential 
-                **ensure to make progress towards reducing the word count by at least {(to_reduce_percentage*100) + 10}%***
+                **ensure to make progress towards reducing the word count by at least {(to_reduce_percentage*100) + 20}%***
 
                 Return ONLY the revised **shortened paragraph**. Do not explain anything.
             """
@@ -363,6 +352,7 @@ class ML:
             print('Percentage to reduce:', to_reduce_percentage)
             print("\n")
 
+        final_output = await self.process_short(final_output)
         return final_output
     
 

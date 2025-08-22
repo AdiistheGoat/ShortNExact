@@ -46,7 +46,7 @@ class frontend:
 
         output = output.json()
         if("error" in output):
-            return output["error"]
+            return output["error"],len(output["error"].split())
         processed_text = output["processed_text"]
         processed_text_length = output["processed_text_length"]
         return processed_text,processed_text_length
