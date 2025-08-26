@@ -142,7 +142,7 @@ class frontend:
             with gr.Column(visible=False) as key_page:
                 name = gr.Textbox(label="Name", placeholder="Enter your name here...")
                 email = gr.Textbox(label="Email", placeholder="Enter your email here...", type="email")
-                validity = gr.Number(label="Validity",step=1,minimum=1,value = 1)
+                validity = gr.Number(label="Validity (The no of days you want to keep your api valid for)",step=1,minimum=1,value = 1)
                 generate_button_text = gr.Button("Generate API Key")
                 output_key = gr.Textbox(label="Your Api Key", placeholder="Save the key securely, it will not be shown again!")
                 btn_back_details = gr.Button("Go to Text Processing App")
