@@ -26,12 +26,13 @@ bash start.sh
 ## Running with Docker Images from Docker Hub
 
 ### 1. **Ensure you have the following files in your project directory.**
+   ```sh
 haproxy.cfg
 init.sql
 pgbouncer.ini 
 compose.yml 
 userlist.txt 
-
+   ```
 
 ### 2. **Pull the pre-built images from Docker Hub:**
    ```sh
