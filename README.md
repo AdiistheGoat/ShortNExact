@@ -17,20 +17,10 @@ python3 -m venv venv
 source ./venv/bin/activate
 ```
 
-### 4. Build Docker images
+### 4. Run starting script
 
 ```sh
-docker build -f Dockerfile.frontend -t frontend_img .
-docker build -f Dockerfile.lb -t lb_img .
-docker build -f Dockerfile.api -t api_img .
-```
-
-### 5. Start services with Docker Compose
-
-```sh
-docker compose down
-docker system prune
-docker compose up -d 
+bash start.sh
 ```
 
 ## Running with Docker Images from Docker Hub
