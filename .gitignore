@@ -6,3 +6,7 @@ postgre_db/
 redis-data/
 ./start.sh
 ./requirements.txt
+./cicd.sh
+learnings/
+.DS_Store/
+.gitignore
