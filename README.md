@@ -7,32 +7,30 @@
 
 ```sh
 git clone https://github.com/AdiistheGoat/ShortNExact
-cd llm_project
+cd ShortNExact
 ```
 
 ### 2. Create and activate a virtual environment
 
 ```sh
 python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-```sh
-pip3 install -r requirements.txt
+source ./venv/bin/activate
 ```
 
 ### 4. Build Docker images
 
 ```sh
-docker build -f Dockerfile.api -t api_img .
 docker build -f Dockerfile.frontend -t frontend_img .
+docker build -f Dockerfile.lb -t lb_img .
+docker build -f Dockerfile.api -t api_img .
 ```
 
 ### 5. Start services with Docker Compose
 
 ```sh
-docker compose up
+docker compose down
+docker system prune
+docker compose up -d 
 ```
 
 ## Running with Docker Images from Docker Hub
