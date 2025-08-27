@@ -11,62 +11,64 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 ## How to Contribute
 
-### 1. Clone the repository
+### 1. Fork the repository
+
+### 2. Clone the repository
 ```sh
 git clone https://github.com/AdiistheGoat/ShortNExact
 cd ShortNExact
 ```
 
-### 2. Create and activate a virtual environment
+### 3. Create and activate a virtual environment
 ```sh
 python3 -m venv venv
 source ./venv/bin/activate
 ```
 
-### 3. Create a new local branch
+### 4. Create a new local branch
 ```sh
 git checkout -b feature/your-feature-name
 ```
 
-### 4. Make changes
+### 5. Make changes
 Add your code, documentation, or tests
 
-### 5. Commit your changes
+### 6. Commit your changes
 ```sh
 git add .
 git commit -m "Add: short description of your change"
 ```
 
-### 6. Pull the latest main branch from the original repo
+### 7. Pull the latest main branch from the original repo
 ```sh
 git checkout main
 git pull
 ```
 
-### 6. Rebasing feature branch commits on main branch
+### 8. Rebasing feature branch commits on main branch
 ```sh
 git checkout feature/your-feature-name
 git rebase main
 ```
 
-### 7. resolve conflicts
+### 9. resolve conflicts
 You edit the file(s) to fix the conflict markers (<<<<<<<, =======, >>>>>>>).
 
-### 8. Mark conflicts resolved
+### 10. Mark conflicts resolved
 ```sh
 git add .
 ```
 
-### 9. Continue the rebase
+### 11. Continue the rebase
 ```sh
 git rebase --continue
 ```
 
-### 10. Push the new feature branch
+### 12. Push the new feature branch
 ```sh
 git push origin feature/your-feature-name
 ```
-### 11. Create the PR
+### 13. Create the PR
 Go to the original repository and open a Pull Request (PR) with a clear description of what you’ve changed in acceptance with pull_request.md
 
 
