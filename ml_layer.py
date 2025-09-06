@@ -1,9 +1,9 @@
-import openai
 import regex as re
 import nltk
 nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
 from collections import defaultdict
+from llm_interface import LLMProvider, LLMTool
 
 #ToDo (ML):
 # store the current least text and least no of words
@@ -13,7 +13,7 @@ from collections import defaultdict
 
 class ML: 
 
-    def __init__(self, input_text, number_of_words, option,client):
+    def __init__(self, input_text, number_of_words, option, provider):
         """
         Initialize the ML class with input parameters.
 
@@ -21,12 +21,12 @@ class ML:
             input_text (str): The raw input text to be processed.
             number_of_words (int): The target word count for the output.
             option (str): Mode of processing — either concise summarization or slight shortening.
-            client (OpenAI client): OpenAI-compatible client to call language model API.
+            provider (LLMProvider): LLM provider instance to call language model API.
         """
         self.input_text = input_text
         self.number_of_words = number_of_words
         self.option = option    
-        self.client = client
+        self.provider = provider
 
         self.reg = re.compile(
         r"\b(?:"
@@ -59,33 +59,26 @@ class ML:
 
 
         tools = [
-
-        {
-            "type": "function",
-            "name": "process_concisely",
-            "description": "Use this tool when the user wants to restructure and condense large blocks of text into a concise form while preserving key ideas. Best for aggressive"
-            "length reduction."
-        },
-
-        {
-            "type": "function",
-            "name": "process_short",
-            "description": "Use this tool to reduce word count while keeping sentence structure and paragraph flow unchanged. Preferred when the content "
-            "is slightly over the word budget. "
-        },
-
-        {
-            "type": "function",
-            "name": "increase_words",
-            "description": "Use this to gently expand a response that just slightly falls short of the word limit by enriching examples or using more expressive language."
-            "and meaning should remain unchanged."
-        },
-
-        {
-            "type": "function",
-            "name": "decrease_words",
-            "description": "Use this to shave off extra words from a response that just slightly goes over the word limit, focusing on cutting modifiers or redundant examples.",
-        }
+            LLMTool(
+                type="function",
+                name="process_concisely",
+                description="Use this tool when the user wants to restructure and condense large blocks of text into a concise form while preserving key ideas. Best for aggressive length reduction."
+            ),
+            LLMTool(
+                type="function",
+                name="process_short",
+                description="Use this tool to reduce word count while keeping sentence structure and paragraph flow unchanged. Preferred when the content is slightly over the word budget."
+            ),
+            LLMTool(
+                type="function",
+                name="increase_words",
+                description="Use this to gently expand a response that just slightly falls short of the word limit by enriching examples or using more expressive language. Meaning should remain unchanged."
+            ),
+            LLMTool(
+                type="function",
+                name="decrease_words",
+                description="Use this to shave off extra words from a response that just slightly goes over the word limit, focusing on cutting modifiers or redundant examples."
+            )
         ]
 
 
@@ -112,16 +105,20 @@ class ML:
                History of tools called: {dic_history}
             """
 
-            response = await self.client.responses.create(
-                model="gpt-4.1",
-                input = message,
-                top_p=0.3,
+            response = await self.provider.generate_response(
+                input_text=message,
                 instructions=system_prompt_segment,
-                tools = tools
+                temperature=0.3,
+                tools=tools
             )
 
-            tool_call = response.output[0]
-            function_str = str(tool_call.name)
+            # Check if a tool was called
+            if response.metadata and "tool_call" in response.metadata:
+                tool_call = response.metadata["tool_call"]
+                function_str = tool_call.name
+            else:
+                # If no tool call, break the loop to avoid infinite loop
+                break
 
             dic_history[function_str] += 1
 
@@ -223,14 +220,13 @@ class ML:
             "Return ONLY the revised **gramatically corrected paragraph**. Do not explain anything."
         )
 
-        segment_response = await self.client.responses.create(
-            model="gpt-4.1",
-            input=input_text,
-            top_p=0.3,
-            instructions=system_prompt_segment
+        segment_response = await self.provider.generate_response(
+            input_text=input_text,
+            instructions=system_prompt_segment,
+            temperature=0.3
         )
 
-        segmented_text = segment_response.output[0].content[0].text.strip()
+        segmented_text = segment_response.content.strip()
 
         return segmented_text 
 
@@ -259,14 +255,13 @@ class ML:
             "Pls dont chnage the word count of the text. Just divide the text into different parts"
         )
 
-        segment_response = await self.client.responses.create(
-            model="gpt-4.1",
-            input=input_text,
-            top_p=0.3,
-            instructions=system_prompt_segment
+        segment_response = await self.provider.generate_response(
+            input_text=input_text,
+            instructions=system_prompt_segment,
+            temperature=0.3
         )
 
-        segmented_text = segment_response.output[0].content[0].text.strip()
+        segmented_text = segment_response.content.strip()
         curr_blobs = [b.strip() for b in segmented_text.split("<CHUNK_END>") if b.strip()]
 
         print(f"Segmented into {len(curr_blobs)} chunks.")
@@ -322,13 +317,12 @@ class ML:
             """
 
             for index in  range(len(curr_blobs)):
-                refine_response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input=curr_blobs[index],
-                    top_p=0.3,
-                    instructions=system_prompt_concise
+                refine_response = await self.provider.generate_response(
+                    input_text=curr_blobs[index],
+                    instructions=system_prompt_concise,
+                    temperature=0.3
                 )
-                refined = refine_response.output[0].content[0].text.strip()
+                refined = refine_response.content.strip()
                 curr_blobs[index] = refined
 
             # Step 3: Combine all refined chunks
@@ -419,14 +413,13 @@ class ML:
                     f"Max no words you can reduce: {to_reduce}"
                 )
 
-                response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input = f"{user_input}",
-                    top_p = 0.3,
-                    instructions = system_prompt
+                response = await self.provider.generate_response(
+                    input_text=user_input,
+                    instructions=system_prompt,
+                    temperature=0.3
                 )
 
-                shortened = response.output[0].content[0].text.strip()
+                shortened = response.content.strip()
 
                 # Update word budget
                 old_len = self.count_words(line)
@@ -534,14 +527,13 @@ class ML:
                     f"Max no words you can increase: {to_increase}"
                 )
 
-                response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input = f"{user_input}",
-                    top_p = 0.3,
-                    instructions = system_prompt
+                response = await self.provider.generate_response(
+                    input_text=user_input,
+                    instructions=system_prompt,
+                    temperature=0.3
                 )
 
-                increased = response.output[0].content[0].text.strip()
+                increased = response.content.strip()
 
                 # Update word budget
                 old_len = self.count_words(line)
@@ -644,14 +636,13 @@ class ML:
                     f"Max no words you can reduce: {to_reduce}"
                 )
 
-                response = await self.client.responses.create(
-                    model="gpt-4.1",
-                    input = f"{user_input}",
-                    top_p = 0.3,
-                    instructions = system_prompt
+                response = await self.provider.generate_response(
+                    input_text=user_input,
+                    instructions=system_prompt,
+                    temperature=0.3
                 )
 
-                shortened = response.output[0].content[0].text.strip()
+                shortened = response.content.strip()
 
                 # Update word budget
                 old_len = self.count_words(line)
