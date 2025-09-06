@@ -2,18 +2,94 @@ import gradio as gr
 from gradio.themes.base import Base
 from gradio.themes.utils import colors, fonts
 import requests
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 class frontend:
 
     def __init__(self):
         """Frontend class for handling the UI and backend interaction."""
         self.client = None
+        self.providers_data = None
 
-    def process(self,endpoint_ai: str,endpoint_app: str,inputText: str, noOfWords: int, option: int,request: gr.Request):
+    def get_providers_data(self):
+        """
+        Fetch supported providers and models from the backend.
+        
+        Returns:
+            dict: Providers data or default fallback
+        """
+        try:
+            response = requests.get("http://lb:4000/providers")
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Failed to fetch providers: {response.status_code}")
+                return self.get_fallback_providers()
+        except Exception as e:
+            print(f"Error fetching providers: {e}")
+            return self.get_fallback_providers()
+
+    def get_fallback_providers(self):
+        """
+        Fallback provider data in case backend is unavailable.
+        
+        Returns:
+            dict: Default providers configuration
+        """
+        return {
+            "supported_providers": ["openai", "gemini"],
+            "recommended_models": {
+                "openai": ["gpt-4.1"],
+                "gemini": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"]
+            }
+        }
+
+    def update_models_for_provider(self, provider):
+        """
+        Update the model dropdown based on selected provider.
+        
+        Args:
+            provider (str): Selected provider name
+            
+        Returns:
+            gr.Dropdown: Updated dropdown with models for the provider
+        """
+        if not self.providers_data:
+            self.providers_data = self.get_providers_data()
+        
+        models = self.providers_data.get("recommended_models", {}).get(provider, [])
+        return gr.Dropdown(choices=models, value=models[0] if models else None)
+
+    def update_api_key_label(self, provider):
+        """
+        Update API key label based on selected provider.
+        
+        Args:
+            provider (str): Selected provider name
+            
+        Returns:
+            gr.Textbox: Updated textbox with provider-specific label
+        """
+        provider_labels = {
+            "openai": "Enter OpenAI API key",
+            "gemini": "Enter Gemini API key"
+        }
+        label = provider_labels.get(provider, f"Enter {provider.title()} API key")
+        return gr.Textbox(label=label, placeholder=f"Enter your {provider} api key here...", type="password")
+
+    def process(self, provider: str, model: str, endpoint_ai: str, endpoint_app: str, inputText: str, noOfWords: int, option: int, request: gr.Request):
         """
         Process and validate the input text using the selected option via ML class.
 
         Args:
+            provider (str): Selected LLM provider.
+            model (str): Selected model.
+            endpoint_ai (str): API key for the LLM provider.
+            endpoint_app (str): App API key.
             inputText (str): The text to process.
             noOfWords (int): Desired word count.
             option (str): Selected processing option.
@@ -32,6 +108,8 @@ class frontend:
 
         item = {
             "llm_api_key": endpoint_ai,
+            "llm_provider": provider,
+            "llm_model": model,
             "app_key": endpoint_app,
             "option": option,
             "input_text": inputText,
@@ -106,6 +184,12 @@ class frontend:
         Creates interactive components for input, configuration,
         and displaying processed output.
         """
+        # Initialize providers data
+        self.providers_data = self.get_providers_data()
+        supported_providers = self.providers_data.get("supported_providers", ["openai", "gemini"])
+        default_provider = supported_providers[0] if supported_providers else "openai"
+        default_models = self.providers_data.get("recommended_models", {}).get(default_provider, ["gpt-4.1"])
+        
         demo = gr.Blocks(theme=gr.themes.Soft())
 
         with demo:
@@ -121,7 +205,24 @@ class frontend:
 
                 btn_generate_key = gr.Button("Go to Generate API Key (if you don't have one)")
 
-                endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your open api endpoint here...", type="password")
+                # Provider selection
+                provider_dropdown = gr.Dropdown(
+                    choices=supported_providers,
+                    value=default_provider,
+                    label="LLM Provider",
+                    info="Select your preferred language model provider"
+                )
+
+                # Model selection (will be updated based on provider)
+                model_dropdown = gr.Dropdown(
+                    choices=default_models,
+                    value=default_models[0] if default_models else None,
+                    label="Model",
+                    info="Select the specific model to use"
+                )
+
+                # API key input (label will update based on provider)
+                endpoint_ai = gr.Textbox(label="Enter OpenAI API key", placeholder="Enter your OpenAI api key here...", type="password")
 
                 input = gr.Textbox(label="Input Text", placeholder="Enter your text here...")
 
@@ -158,9 +259,23 @@ class frontend:
                 outputs=[key_page,details_page],
            )
 
+            # Update model dropdown when provider changes
+            provider_dropdown.change(
+                fn=self.update_models_for_provider,
+                inputs=[provider_dropdown],
+                outputs=[model_dropdown]
+            )
+
+            # Update API key label when provider changes
+            provider_dropdown.change(
+                fn=self.update_api_key_label,
+                inputs=[provider_dropdown],
+                outputs=[endpoint_ai]
+            )
+
             submit_button_text.click(
                 fn=self.process,
-                inputs=[endpoint_ai,endpoint_app ,input, number_of_words, option],
+                inputs=[provider_dropdown, model_dropdown, endpoint_ai, endpoint_app, input, number_of_words, option],
                 outputs=[output_text,output_no_of_words]
             )
 
