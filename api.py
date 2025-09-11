@@ -2,7 +2,7 @@
 from ml_layer import ML
 from fastapi import FastAPI
 from pydantic import BaseModel
-import openai
+from llm_interface import LLMProviderFactory
 import redis
 import time
 from fastapi import Request
@@ -26,7 +26,9 @@ MAX_API_KEYS_LAST_24_HOURS = 10000
 
 # Define request schema for main API functionality
 class Item(BaseModel):
-    llm_api_key: str       # API key for the language model (e.g., OpenAI)
+    llm_api_key: str       # API key for the language model
+    llm_provider: str      # LLM provider ("openai", "gemini")
+    llm_model: str         # Model name (e.g., "gpt-4o", "gemini-1.5-pro")
     app_key: str           # User-provided application-specific key
     option: int            # Option to select processing type or mode
     input_text: str        # Text input to be processed
@@ -87,23 +89,34 @@ def generate_api_key(length_bytes=40):
     random_bytes = secrets.token_urlsafe(length_bytes)
     return random_bytes
 
-def process_endpoint(key: str):
+async def create_llm_provider(provider_name: str, api_key: str, model: str):
     """
-    Validates and initializes OpenAI client using the given API key.
+    Creates and validates an LLM provider using the given parameters.
 
     Args:
-        key (str): OpenAI API key.
+        provider_name (str): Name of the LLM provider ("openai", "gemini").
+        api_key (str): API key for the provider.
+        model (str): Model name to use.
 
     Returns:
-        openai.OpenAI: Initialized client if key is valid, otherwise None.
+        LLMProvider: Initialized provider if valid, otherwise None.
     """
     try:
-        client = openai.AsyncOpenAI(api_key=key)
-        client.models.list()
-        return client
+        provider = LLMProviderFactory.create_provider(
+            provider_name=provider_name,
+            api_key=api_key,
+            model=model
+        )
+        
+        # Initialize and validate the provider
+        if await provider.initialize():
+            return provider
+        else:
+            return None
 
     except Exception as e:
-        print(e)
+        print(f"Failed to create LLM provider: {e}")
+        return None
 
 
 def validate_input(option:int, input_text:str, no_of_words:int):
@@ -236,6 +249,34 @@ def health_check(request: Request):
     return {"status": "healthy"}
 
 
+@app.get("/providers")
+def get_supported_providers():
+    """
+    Get list of supported LLM providers and their recommended models.
+    
+    Returns:
+        dict: Dictionary containing supported providers and model recommendations
+    """
+    providers_info = {
+        "supported_providers": LLMProviderFactory.get_supported_providers(),
+        "recommended_models": {
+            "openai": [
+                "gpt-4.1"
+                # "gpt-4o",
+                # "gpt-4o-mini", 
+                # "gpt-4-turbo",
+                # "gpt-3.5-turbo"
+            ],
+            "gemini": [
+                "gemini-1.5-pro",
+                "gemini-1.5-flash",
+                "gemini-pro"
+            ]
+        }
+    }
+    return providers_info
+
+
 
 @app.get("/")
 async def reduce_content(item: Item,request: Request):
@@ -259,6 +300,8 @@ async def reduce_content(item: Item,request: Request):
         return {"error": str(e)}
 
     llm_api_key = item.llm_api_key
+    llm_provider = item.llm_provider
+    llm_model = item.llm_model
     option = item.option
     input_text = item.input_text
     no_of_words = item.no_of_words
@@ -296,9 +339,15 @@ async def reduce_content(item: Item,request: Request):
         return {"error": "app Api Key has expired"}
     
 
-    client = process_endpoint(key=llm_api_key)
-    if not (client):
-        return {"error": "endpoint not valid"}
+    # Validate provider name
+    supported_providers = LLMProviderFactory.get_supported_providers()
+    if llm_provider.lower() not in supported_providers:
+        return {"error": f"Unsupported LLM provider: {llm_provider}. Supported providers: {supported_providers}"}
+    
+    # Create and validate LLM provider
+    provider = await create_llm_provider(llm_provider, llm_api_key, llm_model)
+    if not provider:
+        return {"error": "LLM provider validation failed. Please check your API key and model name."}
 
     validation_msg = validate_input(option, input_text, no_of_words)
     if validation_msg:
@@ -311,7 +360,7 @@ async def reduce_content(item: Item,request: Request):
         option_string = "Shorten text (choose if you want to slightly shorten text to fix it within a word count)"
     
     refined_input_text = " ".join(input_text.split())
-    ml_instance = ML(refined_input_text, no_of_words, option_string,client)
+    ml_instance = ML(refined_input_text, no_of_words, option_string, provider)
     processed_text,processed_text_length = await ml_instance.process_text()
     return {"processed_text": processed_text, "processed_text_length": processed_text_length}
 
