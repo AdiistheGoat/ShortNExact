@@ -1,6 +1,13 @@
 # ShortNExact
 
 
+We’ve all been there… it’s midnight, your essay’s due, and the word limit is 500. You ask ChatGPT to concise it, and it spits out 490… or 512. Then you waste half an hour going back and forth instead of actually submitting 🤦‍♂️.
+
+That’s exactly why I built ShortAndExact 👉 an agentic AI tool that trims or expands your text to hit the exact word count you need. No more stress, no more guesswork.
+
+Just plug in your OpenAI key, paste your text, and boom — deadline saved 🙌.
+
+
 ## Cloning the repo 
 
 ### 1. Clone the repository
