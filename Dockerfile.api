@@ -3,6 +3,7 @@ FROM python:3.13.3
 WORKDIR /app
 COPY api.py /app
 COPY ml_layer.py /app
+COPY llm_interface.py /app
 COPY api_requirements.txt /app
 
 # to not ensure stale view 
